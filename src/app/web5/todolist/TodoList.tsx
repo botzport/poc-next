@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Web5 } from "@web5/api";
 import {
 	Checkbox,
@@ -13,6 +13,17 @@ import {
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
 
+const TODO_SCHEMA = "https://schema.org/ToDo";
+
+interface Todo {
+	record: any;
+	data: {
+		completed: boolean;
+		description: string;
+	};
+	id: string;
+}
+
 const initDWN = async ({ onSuccess }) => {
 	const { web5, did } = await Web5.connect();
 	if (web5 && did) {
@@ -22,24 +33,50 @@ const initDWN = async ({ onSuccess }) => {
 	console.error("Failed to connect to DWN");
 };
 
-const populateTodos = async ({ web5, setTodos }) => {
+const createRecord = async ({ web5, newTodoData, onSuccess }) => {
+	const { record } = await web5.dwn.records.create({
+		data: newTodoData,
+		message: {
+			schema: TODO_SCHEMA,
+			dataFormat: "application/json",
+		},
+	});
+
+	const data = await record.data.json();
+
+	const todo = {
+		record,
+		data,
+		id: record.id,
+	};
+	onSuccess({ todo });
+};
+
+const populateTodos = async ({ web5, onSuccess }) => {
 	const { records } = await web5.dwn.records.query({
 		message: {
 			filter: {
-				schema: "https://schema.org/ToDo", // replace with own schema
+				schema: TODO_SCHEMA, // replace with own schema
 			},
 			dateSort: "createdAscending",
 		},
 	});
-	console.log("....records", records);
+	const todos = [];
+	for (let record of records) {
+		const data = await record.data.json();
+		const todo = { record, data, id: record.id };
+		todos.push(todo);
+	}
+	onSuccess({ todos });
 };
 
 const TEST_ITEMS = ["item 1", "item 2"];
 
 export const TodoList = () => {
+	const [todos, setTodos] = useState<Todo[]>([]);
+	const [newTodoDesc, setNewTodoDesc] = useState("");
 	const [did, setDid] = useState(null);
 	const [web5, setWeb5] = useState(null);
-	const [todos, setTodos] = useState(TEST_ITEMS);
 
 	useEffect(() => {
 		// create DID and Web5 instance
@@ -47,22 +84,54 @@ export const TodoList = () => {
 			onSuccess: ({ web5, did }) => {
 				setWeb5(web5);
 				setDid(did);
-				populateTodos({ web5, setTodos });
-				// populate todos from DWN
+				// get todos from DWN
+				populateTodos({
+					web5,
+					onSuccess: ({ todos }) => {
+						console.log("....got todos from DWN", todos);
+						setTodos(todos);
+					},
+				});
 			},
 		});
 	}, []);
 
+	const handleAddTodo = useCallback(async () => {
+		const newTodoData = {
+			completed: false,
+			description: newTodoDesc,
+		};
+		// create the record in DWN
+		createRecord({
+			web5,
+			newTodoData,
+			onSuccess: ({ todo }: { todo: Todo }) => {
+				console.log("....added todo to DWN", todo);
+				setTodos([...todos, todo]);
+				setNewTodoDesc("");
+			},
+		});
+	}, [newTodoDesc, web5, todos]);
+
+	const handleNewTodoChange = (event) => setNewTodoDesc(event.target.value);
+
 	return (
 		<>
 			<ActionableItem
-				itemComponent={<Input placeholder="a new todo" />}
+				itemComponent={
+					<Input
+						placeholder="a new todo"
+						value={newTodoDesc}
+						onChange={handleNewTodoChange}
+					/>
+				}
 				actionComp={
 					<IconButton
 						aria-label="delete"
 						size="sm"
 						colorScheme="blue"
 						icon={<AddIcon />}
+						onClick={handleAddTodo}
 					/>
 				}
 			/>
@@ -76,12 +145,16 @@ export const TodoList = () => {
 				spacing={0}
 				m="20px"
 			>
-				{todos.map((todo, index) => (
+				{todos.map(({ data, id }) => (
 					<ActionableItem
-						key={index}
+						key={id}
 						itemComponent={
-							<Checkbox size="lg" colorScheme="green">
-								{todo}
+							<Checkbox
+								size="lg"
+								colorScheme="green"
+								isChecked={data.isCompleted}
+							>
+								{data.description}
 							</Checkbox>
 						}
 						actionComp={
