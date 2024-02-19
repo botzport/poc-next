@@ -3,14 +3,15 @@
 import { useEffect, useState } from "react";
 import { Web5 } from "@web5/api";
 import {
-	Card,
-	CardHeader,
-	CardBody,
-	CardFooter,
-	Text,
 	Checkbox,
 	Stack,
+	IconButton,
+	Box,
+	Input,
+	StackDivider,
 } from "@chakra-ui/react";
+import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
+import { ActionableItem } from "@/app/shared/ActionableItem";
 
 const initDWN = async ({ onSuccess }) => {
 	const { web5, did } = await Web5.connect();
@@ -33,10 +34,12 @@ const populateTodos = async ({ web5, setTodos }) => {
 	console.log("....records", records);
 };
 
+const TEST_ITEMS = ["item 1", "item 2"];
+
 export const TodoList = () => {
 	const [did, setDid] = useState(null);
 	const [web5, setWeb5] = useState(null);
-	const [todos, setTodos] = useState([]);
+	const [todos, setTodos] = useState(TEST_ITEMS);
 
 	useEffect(() => {
 		// create DID and Web5 instance
@@ -51,16 +54,47 @@ export const TodoList = () => {
 	}, []);
 
 	return (
-		<Stack spacing={[1, 5]} direction={"column"}>
-			<Checkbox size="lg" colorScheme="red" isChecked={true}>
-				Checkbox
-			</Checkbox>
-			<Checkbox size="md" colorScheme="green" defaultChecked>
-				Checkbox
-			</Checkbox>
-			<Checkbox size="lg" colorScheme="orange" defaultChecked>
-				Checkbox
-			</Checkbox>
-		</Stack>
+		<>
+			<ActionableItem
+				itemComponent={<Input placeholder="a new todo" />}
+				actionComp={
+					<IconButton
+						aria-label="delete"
+						size="sm"
+						colorScheme="blue"
+						icon={<AddIcon />}
+					/>
+				}
+			/>
+			<Box mb={10} />
+			<Stack
+				direction="column"
+				divider={<StackDivider />}
+				boxShadow="0 0 30px 0 rgba(0, 0, 0, 0.04)"
+				border="1px solid #E8E8E8"
+				borderRadius="5px"
+				spacing={0}
+				m="20px"
+			>
+				{todos.map((todo, index) => (
+					<ActionableItem
+						key={index}
+						itemComponent={
+							<Checkbox size="lg" colorScheme="green">
+								{todo}
+							</Checkbox>
+						}
+						actionComp={
+							<IconButton
+								aria-label="delete"
+								size="sm"
+								colorScheme="red"
+								icon={<DeleteIcon />}
+							/>
+						}
+					/>
+				))}
+			</Stack>
+		</>
 	);
 };

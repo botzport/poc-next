@@ -1,14 +1,12 @@
 import { TodoList } from "./TodoList";
+import { BasePage } from "@/app/shared/BasePage";
 
 // `app/page.tsx` is the UI for the `/` URL
 
-const isSSREnabled = () => typeof window === "undefined";
-
 export default function Page() {
 	return (
-		<>
-			<h1>Web5 TODO</h1>
+		<BasePage title="Web5 Todo List">
 			<TodoList />
-		</>
+		</BasePage>
 	);
 }
