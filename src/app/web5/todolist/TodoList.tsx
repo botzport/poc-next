@@ -13,7 +13,8 @@ import {
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
 
-const TODO_SCHEMA = "https://schema.org/ToDo";
+// TODO: replace with own schema
+const TODO_SCHEMA = "https://schema.org/SocialMediaPosting";
 
 interface Todo {
 	record: any;
@@ -33,24 +34,39 @@ const initDWN = async ({ onSuccess }) => {
 	console.error("Failed to connect to DWN");
 };
 
-const createRecord = async ({ web5, newTodoData, onSuccess }) => {
-	const { record } = await web5.dwn.records.create({
-		data: newTodoData,
-		message: {
-			schema: TODO_SCHEMA,
-			dataFormat: "application/json",
-		},
-	});
+const createRecord =
+	(web5) =>
+	async ({ newTodoData, onSuccess }) => {
+		const { record } = await web5.dwn.records.create({
+			data: newTodoData,
+			message: {
+				schema: TODO_SCHEMA,
+				dataFormat: "application/json",
+			},
+		});
 
-	const data = await record.data.json();
+		const data = await record.data.json();
 
-	const todo = {
-		record,
-		data,
-		id: record.id,
+		const todo = {
+			record,
+			data,
+			id: record.id,
+		};
+		onSuccess({ todo });
 	};
-	onSuccess({ todo });
-};
+
+const deleteRecord =
+	(web5) =>
+	async ({ recordId, onSuccess }) => {
+		// Delete the record in DWN
+		await web5.dwn.records.delete({
+			message: {
+				recordId,
+			},
+		});
+
+		onSuccess();
+	};
 
 const populateTodos = async ({ web5, onSuccess }) => {
 	const { records } = await web5.dwn.records.query({
@@ -69,8 +85,6 @@ const populateTodos = async ({ web5, onSuccess }) => {
 	}
 	onSuccess({ todos });
 };
-
-const TEST_ITEMS = ["item 1", "item 2"];
 
 export const TodoList = () => {
 	const [todos, setTodos] = useState<Todo[]>([]);
@@ -96,14 +110,13 @@ export const TodoList = () => {
 		});
 	}, []);
 
-	const handleAddTodo = useCallback(async () => {
+	const handleAddTodo = useCallback(() => {
 		const newTodoData = {
 			completed: false,
 			description: newTodoDesc,
 		};
 		// create the record in DWN
-		createRecord({
-			web5,
+		createRecord(web5)({
 			newTodoData,
 			onSuccess: ({ todo }: { todo: Todo }) => {
 				console.log("....added todo to DWN", todo);
@@ -115,6 +128,19 @@ export const TodoList = () => {
 
 	const handleNewTodoChange = (event) => setNewTodoDesc(event.target.value);
 
+	const handleDeleteTodo = useCallback(
+		({ recordId }) => {
+			// delete the record in DWN
+			deleteRecord(web5)({
+				recordId,
+				onSuccess: () => {
+					setTodos(todos.filter(({ id }) => id !== recordId));
+					console.log(`....deleted todo ${recordId} from DWN`);
+				},
+			});
+		},
+		[web5, todos],
+	);
 	return (
 		<>
 			<ActionableItem
@@ -152,7 +178,7 @@ export const TodoList = () => {
 							<Checkbox
 								size="lg"
 								colorScheme="green"
-								isChecked={data.isCompleted}
+								isChecked={data.completed}
 							>
 								{data.description}
 							</Checkbox>
@@ -163,6 +189,7 @@ export const TodoList = () => {
 								size="sm"
 								colorScheme="red"
 								icon={<DeleteIcon />}
+								onClick={() => handleDeleteTodo({ recordId: id })}
 							/>
 						}
 					/>
