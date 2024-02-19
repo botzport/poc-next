@@ -13,8 +13,10 @@ import {
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
 
-// TODO: replace with own schema
-const TODO_SCHEMA = "https://schema.org/SocialMediaPosting";
+// This schema actually doesn't matter at all for this app
+// For a real app, we would want to define our own schema
+// and host it somewhere like S3, google cloud storage, or github
+const TODO_SCHEMA = "https://schema.org/ToDo";
 
 interface Todo {
 	record: any;
@@ -64,6 +66,24 @@ const deleteRecord =
 				recordId,
 			},
 		});
+
+		onSuccess();
+	};
+
+const updateRecord =
+	(web5) =>
+	async ({ recordId, updatedTodoData, onSuccess }) => {
+		// Get the record in DWN
+		const { record } = await web5.dwn.records.read({
+			message: {
+				filter: {
+					recordId,
+				},
+			},
+		});
+
+		// Update the record in DWN
+		await record.update({ data: updatedTodoData });
 
 		onSuccess();
 	};
@@ -141,6 +161,31 @@ export const TodoList = () => {
 		},
 		[web5, todos],
 	);
+
+	const handleToggleTodo = useCallback(
+		({ recordId, todoData }) =>
+			(e) => {
+				const updatedTodoData = { ...todoData, completed: e.target.checked };
+				console.log("....updated todo", updatedTodoData);
+				updateRecord(web5)({
+					recordId,
+					updatedTodoData,
+					onSuccess: () => {
+						setTodos(
+							todos.map((todo) => {
+								if (todo.id === recordId) {
+									return { ...todo, data: updatedTodoData };
+								}
+								return todo;
+							}),
+						);
+						console.log(`....updated todo ${recordId} in DWN`);
+					},
+				});
+			},
+		[web5, todos],
+	);
+
 	return (
 		<>
 			<ActionableItem
@@ -179,6 +224,7 @@ export const TodoList = () => {
 								size="lg"
 								colorScheme="green"
 								isChecked={data.completed}
+								onChange={handleToggleTodo({ todoData: data, recordId: id })}
 							>
 								{data.description}
 							</Checkbox>
