@@ -19,3 +19,11 @@ export interface TodoDwnContextState {
 	deleteTodo: any;
 	updateTodo: any;
 }
+
+export interface NewTodoData {
+	"@type": "list",
+	completed: boolean,
+	description: string
+	author: string
+	recipient: string
+}

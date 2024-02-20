@@ -35,11 +35,11 @@ export default function Page() {
 		});
 	}, [setData]);
 
-	// console.log("path", process.cwd() + "app/api/todolist-shared/protocol.json");
+	if (!data) return null;
 	console.log("data", data);
 	return (
 		<BasePage title="Web5 Shared Todo List" description={PAGE_DESCRIPTION}>
-			<TodoDwnProvider>
+			<TodoDwnProvider protocolDefinition={data}>
 				<SharedTodoList />
 			</TodoDwnProvider>
 		</BasePage>

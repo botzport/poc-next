@@ -7,6 +7,7 @@ import {
 	useState,
 } from "react";
 import {
+	configureProtocol,
 	createRecord,
 	deleteRecord,
 	initDWN,
@@ -23,16 +24,19 @@ const TodoDwnContext = createContext<TodoDwnContextState>({
 	updateTodo: () => {},
 });
 
-export const TodoDwnProvider = ({ children }) => {
+export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 	const [web5, setWeb5] = useState(null);
 	const [did, setDID] = useState("");
 	const [todos, setTodos] = useState<Todo[]>([]);
+
 	useEffect(() => {
 		// create DID and Web5 instance
 		initDWN({
 			onSuccess: ({ web5, did }) => {
 				setWeb5(web5);
 				setDID(did);
+				console.log("....created DID", did);
+				configureProtocol({ web5, protocolDefinition });
 				// get todos from DWN
 				populateTodos({
 					web5,
@@ -43,13 +47,31 @@ export const TodoDwnProvider = ({ children }) => {
 				});
 			},
 		});
-	}, [setTodos]);
+	}, [setTodos, protocolDefinition]);
+
+	const getNewTodo = useCallback(({ completed, description, recipientDID }: {
+			completed: boolean, description: string, recipientDID: string
+	}) => {
+		return {
+				"@type": "list",
+				completed,
+				description,
+				author: did,
+				recipient: recipientDID,
+		}
+	}, [did]);
 
 	const addTodo = useCallback(
-		({ newTodoData, onSuccess }) => {
+		({ newTodoData, recipientDID, onSuccess }) => {
+			const newShardListData = getNewTodo({
+				completed: newTodoData.completed,
+				description: newTodoData.description,
+				recipientDID: recipientDID,
+			})
 			// create the record in DWN
-			createRecord(web5)({
-				newTodoData,
+			createRecord({web5,  protocolDefinition })({
+				newTodoData: newShardListData,
+				recipientDID: did, // TODO: replace with actual recipientDID
 				onSuccess: ({ todo }: { todo: Todo }) => {
 					console.log("....added todo to DWN", todo);
 					setTodos([...todos, todo]);
@@ -57,7 +79,7 @@ export const TodoDwnProvider = ({ children }) => {
 				},
 			});
 		},
-		[web5, todos],
+		[web5, todos, protocolDefinition, getNewTodo, did],
 	);
 
 	const deleteTodo = useCallback(

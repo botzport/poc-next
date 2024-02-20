@@ -11,25 +11,39 @@ export const initDWN = async ({ onSuccess }) => {
 };
 
 export const createRecord =
-	(web5) =>
-	async ({ newTodoData, onSuccess }) => {
-		const { record } = await web5.dwn.records.create({
-			data: newTodoData,
-			message: {
-				schema: TODO_SCHEMA,
-				dataFormat: "application/json",
-			},
-		});
+	({ web5, protocolDefinition }) => {
+		const dataFormat = protocolDefinition.types.list.dataFormats[0]
+		const protocol = protocolDefinition.protocol
+		const schema = protocolDefinition.types.list.schema
+		debugger
+		return async ({ newTodoData, recipientDID, onSuccess }) => {
+			try {
+				const { record } = await web5.dwn.records.create({
+					data: newTodoData,
+					message: {
+						protocol,
+						protocolPath: "list",
+						schema,
+						dataFormat,
+						recipient: recipientDID
+					},
+				});
 
-		const data = await record.data.json();
+				const data = await record.data.json();
 
-		const todo = {
-			record,
-			data,
-			id: record.id,
-		};
-		onSuccess({ todo });
-	};
+				const todo = {
+					record,
+					data,
+					id: record.id,
+				};
+
+				onSuccess({ todo });
+
+			} catch (e) {
+				console.error("Error creating record", e);
+			}
+		}
+	}
 
 export const deleteRecord =
 	(web5) =>
@@ -78,4 +92,38 @@ export const populateTodos = async ({ web5, onSuccess }) => {
 		todos.push(todo);
 	}
 	onSuccess({ todos });
+};
+
+// checks if the protocol is installed and installs it if it isn't
+export const configureProtocol = async ({ web5, protocolDefinition }) => {
+	// query the list of existing protocols on the DWN
+	const { protocols, status } = await web5.dwn.protocols.query({
+		message: {
+			filter: {
+				protocol: protocolDefinition.protocol,
+			},
+		},
+	});
+
+	if (status.code !== 200) {
+		alert("Error querying protocols");
+		console.error("Error querying protocols", status);
+		return;
+	}
+
+	// if the protocol already exists, we return
+	if (protocols.length > 0) {
+		console.log("Protocol already exists");
+		return;
+	}
+
+	// configure protocol on local DWN
+	const { status: configureStatus, protocol } =
+		await web5.dwn.protocols.configure({
+			message: {
+				definition: protocolDefinition,
+			},
+		});
+
+	console.log("Protocol configured", configureStatus, protocol);
 };
