@@ -30,7 +30,7 @@ interface Todo {
 const initDWN = async ({ onSuccess }) => {
 	const { web5, did } = await Web5.connect();
 	if (web5 && did) {
-		console.log("....connected to DWN", { web5, did }) // ion did method
+		console.log("....connected to DWN", { web5, did }); // ion did method
 		onSuccess({ web5, did });
 		return;
 	}

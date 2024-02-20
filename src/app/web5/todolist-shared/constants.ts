@@ -21,9 +21,9 @@ export interface TodoDwnContextState {
 }
 
 export interface NewTodoData {
-	"@type": "list",
-	completed: boolean,
-	description: string
-	author: string
-	recipient: string
+	"@type": "list";
+	completed: boolean;
+	description: string;
+	author: string;
+	recipient: string;
 }
