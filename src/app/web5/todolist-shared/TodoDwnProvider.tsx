@@ -12,6 +12,7 @@ import {
 	deleteRecord,
 	initDWN,
 	populateTodos,
+	retrieveTodos,
 	updateRecord,
 } from "./utils";
 import { Todo, TodoDwnContextState } from "./constants";
@@ -38,8 +39,9 @@ export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 				console.log("....created DID", did);
 				configureProtocol({ web5, protocolDefinition });
 				// get todos from DWN
-				populateTodos({
+				retrieveTodos({
 					web5,
+					protocolDefinition,
 					onSuccess: ({ todos }) => {
 						console.log("....got todos from DWN", todos);
 						setTodos(todos);
@@ -49,17 +51,26 @@ export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 		});
 	}, [setTodos, protocolDefinition]);
 
-	const getNewTodo = useCallback(({ completed, description, recipientDID }: {
-			completed: boolean, description: string, recipientDID: string
-	}) => {
-		return {
+	const getNewTodo = useCallback(
+		({
+			completed,
+			description,
+			recipientDID,
+		}: {
+			completed: boolean;
+			description: string;
+			recipientDID: string;
+		}) => {
+			return {
 				"@type": "list",
 				completed,
 				description,
 				author: did,
 				recipient: recipientDID,
-		}
-	}, [did]);
+			};
+		},
+		[did],
+	);
 
 	const addTodo = useCallback(
 		({ newTodoData, recipientDID, onSuccess }) => {
@@ -67,9 +78,9 @@ export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 				completed: newTodoData.completed,
 				description: newTodoData.description,
 				recipientDID: recipientDID,
-			})
+			});
 			// create the record in DWN
-			createRecord({web5,  protocolDefinition })({
+			createRecord({ web5, protocolDefinition })({
 				newTodoData: newShardListData,
 				recipientDID: did, // TODO: replace with actual recipientDID
 				onSuccess: ({ todo }: { todo: Todo }) => {
@@ -136,10 +147,10 @@ export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 	);
 };
 
-export const useWeb5 = () => {
+export const useTodoListManager = () => {
 	const context = useContext(TodoDwnContext);
 	if (!context) {
-		throw new Error("useWeb5 must be used within a Web5Provider");
+		throw new Error("useTodoListManager must be used within a Web5Provider");
 	}
 	return context;
 };

@@ -1,5 +1,4 @@
 import { Web5 } from "@web5/api";
-import { TODO_SCHEMA } from "./constants";
 
 export const initDWN = async ({ onSuccess }) => {
 	const { web5, did } = await Web5.connect();
@@ -10,40 +9,46 @@ export const initDWN = async ({ onSuccess }) => {
 	console.error("Failed to connect to DWN");
 };
 
-export const createRecord =
-	({ web5, protocolDefinition }) => {
-		const dataFormat = protocolDefinition.types.list.dataFormats[0]
-		const protocol = protocolDefinition.protocol
-		const schema = protocolDefinition.types.list.schema
-		debugger
-		return async ({ newTodoData, recipientDID, onSuccess }) => {
-			try {
-				const { record } = await web5.dwn.records.create({
-					data: newTodoData,
-					message: {
-						protocol,
-						protocolPath: "list",
-						schema,
-						dataFormat,
-						recipient: recipientDID
-					},
-				});
+export const createRecord = ({ web5, protocolDefinition }) => {
+	const dataFormat = protocolDefinition.types.list.dataFormats[0];
+	const protocol = protocolDefinition.protocol;
+	const schema = protocolDefinition.types.list.schema;
+	debugger;
+	return async ({ newTodoData, recipientDID, onSuccess }) => {
+		try {
+			const { record } = await web5.dwn.records.create({
+				data: newTodoData,
+				message: {
+					protocol,
+					protocolPath: "list",
+					schema,
+					dataFormat,
+					recipient: recipientDID,
+				},
+			});
 
-				const data = await record.data.json();
+			const data = await record.data.json();
 
-				const todo = {
-					record,
-					data,
-					id: record.id,
-				};
+			const todo = {
+				record,
+				data,
+				id: record.id,
+			};
 
-				onSuccess({ todo });
+			const { status: sendStatus } = await record.send(recipientDID);
 
-			} catch (e) {
-				console.error("Error creating record", e);
+			if (sendStatus.code !== 202) {
+				console.log("Unable to send to target did:" + sendStatus);
+				return;
+			} else {
+				console.log("Shared list sent to recipient");
 			}
+			onSuccess({ todo });
+		} catch (e) {
+			console.error("Error creating record", e);
 		}
-	}
+	};
+};
 
 export const deleteRecord =
 	(web5) =>
@@ -76,11 +81,16 @@ export const updateRecord =
 		onSuccess();
 	};
 
-export const populateTodos = async ({ web5, onSuccess }) => {
+export const retrieveTodos = async ({
+	web5,
+	protocolDefinition,
+	onSuccess,
+}) => {
+	const schema = protocolDefinition.types.list.schema;
 	const { records } = await web5.dwn.records.query({
 		message: {
 			filter: {
-				schema: TODO_SCHEMA, // replace with own schema
+				schema: schema,
 			},
 			dateSort: "createdAscending",
 		},

@@ -12,12 +12,12 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
-import { useWeb5 } from "./TodoDwnProvider";
+import { useTodoListManager } from "./TodoDwnProvider";
 
 export const SharedTodoList = () => {
 	const [newTodoDesc, setNewTodoDesc] = useState("");
 
-	const { todos, addTodo, deleteTodo, updateTodo } = useWeb5();
+	const { todos, addTodo, deleteTodo, updateTodo } = useTodoListManager();
 	const handleNewTodoChange = (event) => setNewTodoDesc(event.target.value);
 
 	const handleAddTodo = useCallback(() => {
