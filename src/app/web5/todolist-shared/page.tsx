@@ -10,13 +10,15 @@ import { TodoDwnProvider } from "./TodoDwnProvider";
 const PAGE_DESCRIPTION = "multi-user web5 todo list with DWN sync";
 
 async function getData({ onSuccess }) {
-	const res = await fetch("http://localhost:3000/api/todolist-shared");
+	const res = await fetch("http://localhost:3000/api/todolist-shared", {
+		cache: "no-cache",
+	});
 	// The return value is *not* serialized
 	// You can return Date, Map, Set, etc.
 
 	if (!res.ok) {
 		// This will activate the closest `error.js` Error Boundary
-		throw new Error("Failed to fetch data");
+		throw new Error(`Failed to fetch data ${JSON.stringify(res)}`);
 	}
 	const resp = await res.json();
 	onSuccess(resp);
@@ -33,6 +35,7 @@ export default function Page() {
 		});
 	}, [setData]);
 
+	// console.log("path", process.cwd() + "app/api/todolist-shared/protocol.json");
 	console.log("data", data);
 	return (
 		<BasePage title="Web5 Shared Todo List" description={PAGE_DESCRIPTION}>

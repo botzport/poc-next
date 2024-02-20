@@ -1,11 +1,8 @@
+import { promises as fs } from "fs";
+
 export async function GET() {
-	// const res = await fetch("https://data.mongodb-api.com/...", {
-	// 	headers: {
-	// 		"Content-Type": "application/json",
-	// 		"API-Key": process.env.DATA_API_KEY,
-	// 	},
-	// });
-	// const data = await res.json();
-	console.log("hello");
-	return Response.json({ hello: "hello" });
+	const path = __dirname.replace(".next/server", "src") + "/protocol.json"; //.next/server is the path to the build folder that is created when you run next command
+	const fileBuffer = await fs.readFile(path);
+	const json = JSON.parse(fileBuffer.toString());
+	return Response.json(json);
 }
