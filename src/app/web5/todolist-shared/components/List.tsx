@@ -11,26 +11,26 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
-import { useListManager } from "../providers/ListProvider";
+import { useList } from "../providers/ListProvider";
 
 export const List = () => {
 	const [newTodoDesc, setNewTodoDesc] = useState("");
 
-	const { todos, addTodo, deleteTodo, updateTodo } = useListManager();
+	const { todos, createTodo, deleteTodo, updateTodo } = useList();
 	const handleNewTodoChange = (event) => setNewTodoDesc(event.target.value);
 
 	const handleAddTodo = useCallback(() => {
-		const newTodoData = {
+		const newTodoInput = {
 			completed: false,
 			description: newTodoDesc,
 		};
-		addTodo({
-			newTodoData,
+		createTodo({
+			newTodoInput,
 			onSuccess: () => {
 				setNewTodoDesc("");
 			},
 		});
-	}, [newTodoDesc, addTodo]);
+	}, [newTodoDesc, createTodo]);
 
 	const handleDeleteTodo = useCallback(
 		({ recordId }) => {

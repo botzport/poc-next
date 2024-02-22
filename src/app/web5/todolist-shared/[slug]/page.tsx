@@ -23,7 +23,7 @@ export default function Page({ params }: { params: { slug: string } }) {
 	return (
 		<Web5Provider protocolDefinition={data}>
 			<BasePage title="Todo List" description={params.slug ?? ""}>
-				<ListProvider protocolDefinition={data}>
+				<ListProvider protocolDefinition={data} listId={params.slug}>
 					<List />
 				</ListProvider>
 			</BasePage>

@@ -9,44 +9,64 @@ import {
 import {
 	createTodoRecord,
 	deleteRecord,
-	retrieveTodos,
+	getTodoRecipient,
+	retrieveList,
 	updateRecord,
 } from "./utils";
-import { Todo } from "../constants";
 import { useWeb5 } from "./Web5Provider";
+import { List } from "./ListsProvider";
+
+export interface Todo {
+	record: any;
+	data: {
+		completed: boolean;
+		description: string;
+	};
+	id: string;
+}
+export interface TodoData {
+	"@type": "todo";
+	completed: boolean;
+	description: string;
+	author: string;
+	recipient: string;
+	parentId: string;
+}
 
 interface TodoContextState {
 	todos: Todo[];
-	addTodo: any;
+	createTodo: any;
 	deleteTodo: any;
 	updateTodo: any;
 }
 
 const TodoContext = createContext<TodoContextState>({
 	todos: [],
-	addTodo: () => {},
+	createTodo: () => {},
 	deleteTodo: () => {},
 	updateTodo: () => {},
 });
 
-export const ListProvider = ({ children, protocolDefinition }) => {
+export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 	const [todos, setTodos] = useState<Todo[]>([]);
+	const [list, setList] = useState<List[]>([]);
 	const { web5, did } = useWeb5();
 
 	useEffect(() => {
 		if (!web5 || !did) return;
 
-		retrieveTodos({
+		retrieveList({
 			web5,
-			protocolDefinition,
-			onSuccess: ({ todos }) => {
-				console.log("....got todos from DWN", todos);
+			listId,
+			onSuccess: ({ todos, list }) => {
+				console.log("....got todos and list from DWN", todos, list);
 				setTodos(todos);
+				setList(list);
 			},
 		});
-	}, [setTodos, protocolDefinition, did, web5]);
+	}, [setTodos, listId, did, web5]);
 
-	const getNewTodo = useCallback(
+	const getNewTodoData = useCallback(
 		({
 			completed,
 			description,
@@ -55,30 +75,39 @@ export const ListProvider = ({ children, protocolDefinition }) => {
 			completed: boolean;
 			description: string;
 			// recipientDID: string;
-		}) => {
+		}): TodoData => {
 			return {
 				"@type": "todo",
 				completed,
 				description,
 				author: did,
 				// TODO: add ability to assign todo to someone
-				// recipient: recipientDID,
+				recipient: getTodoRecipient({ myDID: did, list }),
+				parentId: listId,
 			};
 		},
-		[did],
+		[did, list, listId],
 	);
 
-	const addTodo = useCallback(
-		({ newTodoData, recipientDID, onSuccess }: any) => {
-			const newShardListData = getNewTodo({
-				completed: newTodoData.completed,
-				description: newTodoData.description,
+	const createTodo = useCallback(
+		({
+			newTodoInput,
+			recipientDID,
+			onSuccess,
+		}: {
+			newTodoInput: any;
+			recipientDID: any;
+			onSuccess: any;
+		}) => {
+			const newTodoData = getNewTodoData({
+				completed: newTodoInput.completed,
+				description: newTodoInput.description,
+				// TODO: add ability to assign todo to someone
 				// recipientDID: recipientDID,
 			});
 			// create the record in DWN
 			createTodoRecord({ web5, protocolDefinition })({
-				newTodoData: newShardListData,
-				// recipientDID: did, // TODO: add ability to assign todo to someone
+				newTodoData: newTodoData,
 				onSuccess: ({ todo }: { todo: Todo }) => {
 					console.log("....added todo to DWN", todo);
 					setTodos([...todos, todo]);
@@ -86,7 +115,7 @@ export const ListProvider = ({ children, protocolDefinition }) => {
 				},
 			});
 		},
-		[web5, todos, protocolDefinition, getNewTodo],
+		[web5, todos, protocolDefinition, getNewTodoData],
 	);
 
 	const deleteTodo = useCallback(
@@ -130,17 +159,17 @@ export const ListProvider = ({ children, protocolDefinition }) => {
 	const value = useMemo(
 		() => ({
 			todos,
-			addTodo,
+			createTodo,
 			deleteTodo,
 			updateTodo,
 		}),
-		[todos, addTodo, deleteTodo, updateTodo],
+		[todos, createTodo, deleteTodo, updateTodo],
 	);
 
 	return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 };
 
-export const useListManager = () => {
+export const useList = () => {
 	const context = useContext(TodoContext);
 	if (!context) {
 		throw new Error("useTodoListManager must be used within a Web5Provider");

@@ -25,6 +25,16 @@ export const initDWN = async ({ onSuccess }) => {
 	console.error("Failed to connect to DWN");
 };
 
+// for a shared todo list, if I created the list, then the recipient of the todo is always me (my todo)
+// if someone else created the list, the recipient is always them (their todo)
+export const getTodoRecipient = ({ myDID, list }) => {
+	if (myDID === list.author) {
+		return list.recipient;
+	} else {
+		return list.author;
+	}
+};
+
 export const createTodoRecord = ({ web5, protocolDefinition }) => {
 	const dataFormat = protocolDefinition.types.todo.dataFormats[0];
 	const protocol = protocolDefinition.protocol;
@@ -35,10 +45,12 @@ export const createTodoRecord = ({ web5, protocolDefinition }) => {
 			const { record } = await web5.dwn.records.create({
 				data: newTodoData,
 				message: {
-					// protocol,
-					// protocolPath: "todo",
+					protocol,
+					protocolPath: "list/todo",
 					schema,
 					dataFormat,
+					parentId: newTodoData.parentId,
+					contextId: newTodoData.parentId,
 				},
 			});
 
@@ -49,6 +61,19 @@ export const createTodoRecord = ({ web5, protocolDefinition }) => {
 				data,
 				id: record.id,
 			};
+
+			const { recipient } = newTodoData;
+			if (recipient) {
+				const { status: sendStatus } = await todo.record.send(recipient);
+
+				if (sendStatus.code !== 202) {
+					console.log("Unable to send to target did:" + sendStatus);
+					return;
+				} else {
+					console.log("Sent todo to recipient");
+				}
+			}
+
 			onSuccess({ todo });
 		} catch (e) {
 			console.error("Error creating todo record", e);
@@ -133,27 +158,41 @@ export const updateRecord =
 		onSuccess();
 	};
 
-export const retrieveTodos = async ({
-	web5,
-	protocolDefinition,
-	onSuccess,
-}: any) => {
-	const schema = protocolDefinition.types.todo.schema;
-	const { records } = await web5.dwn.records.query({
+export const retrieveList = async ({ web5, listId, onSuccess }: any) => {
+	// fetch shared list details
+	const { record: listRecord } = await web5.dwn.records.read({
 		message: {
 			filter: {
-				schema: schema,
+				recordId: listId,
+			},
+		},
+	});
+
+	const list = await listRecord?.data.json();
+	if (!list) {
+		console.error("Error reading list record");
+		return;
+	}
+
+	// fetch todos under list
+	const { records: todoRecords } = await web5.dwn.records.query({
+		message: {
+			filter: {
+				parentId: listId,
 			},
 			dateSort: "createdAscending",
 		},
 	});
+
+	// add entry to array
+
 	const todos = [];
-	for (let record of records) {
+	for (let record of todoRecords) {
 		const data = await record.data.json();
 		const todo = { record, data, id: record.id };
 		todos.push(todo);
 	}
-	onSuccess({ todos });
+	onSuccess({ todos, list });
 };
 
 export const retrieveLists = async ({

@@ -1,10 +1,14 @@
+import { useRouter, usePathname } from "next/navigation";
 import { NewListCreator } from "./NewListCreator";
 import { List, useLists } from "../providers/ListsProvider";
 import { ActionableItem } from "@/app/shared/ActionableItem";
 import { Button, Stack, StackDivider, Text } from "@chakra-ui/react";
 
 export const Lists = () => {
+	const router = useRouter();
+	const pathname = usePathname();
 	const { lists, createList } = useLists();
+
 	return (
 		<>
 			<NewListCreator createList={createList} />
@@ -31,7 +35,7 @@ export const Lists = () => {
 							actionComp={
 								<Button
 									onClick={() => {
-										console.log("open list", id);
+										router.push(`${pathname}/${id}`);
 									}}
 								>
 									Open

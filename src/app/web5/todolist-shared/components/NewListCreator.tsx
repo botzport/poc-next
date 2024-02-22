@@ -1,7 +1,7 @@
 import { ActionableItem } from "@/app/shared/ActionableItem";
 import { AddIcon } from "@chakra-ui/icons";
 import { IconButton, Input, Text } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export const NewListCreator = ({ createList }) => {
 	const [title, setTitle] = useState("");
