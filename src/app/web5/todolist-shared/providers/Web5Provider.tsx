@@ -30,8 +30,7 @@ export const Web5Provider = ({ children, protocolDefinition }) => {
 			onSuccess: ({ web5, did }) => {
 				setWeb5(web5);
 				setDID(did);
-				console.log("....created DID", did);
-				configureProtocol({ web5, protocolDefinition });
+				configureProtocol({ web5, did, protocolDefinition });
 			},
 		});
 	}, [protocolDefinition]);

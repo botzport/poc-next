@@ -34,17 +34,17 @@ export const NewListCreator = ({ createList }) => {
 					<>
 						<Text>Create New Todo List</Text>
 						<Input
-							placeholder="list title"
+							placeholder="title"
 							value={title}
 							onChange={handleTitleChange}
 						/>
 						<Input
-							placeholder="list description"
+							placeholder="description"
 							value={description}
 							onChange={handleDescriptionChange}
 						/>
 						<Input
-							placeholder="list recipient"
+							placeholder="recipient"
 							value={recipient}
 							onChange={handleRecipientChange}
 						/>

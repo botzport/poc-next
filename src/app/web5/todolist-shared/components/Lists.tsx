@@ -2,7 +2,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { NewListCreator } from "./NewListCreator";
 import { List, useLists } from "../providers/ListsProvider";
 import { ActionableItem } from "@/app/shared/ActionableItem";
-import { Button, Stack, StackDivider, Text } from "@chakra-ui/react";
+import { Box, Button, Stack, StackDivider, Text } from "@chakra-ui/react";
 
 export const Lists = () => {
 	const router = useRouter();
@@ -26,14 +26,17 @@ export const Lists = () => {
 						<ActionableItem
 							key={id}
 							itemComponent={
-								<>
+								<Box w="85%">
 									<Text>Title: {data.title}</Text>
 									<Text>Description: {data.description}</Text>
-									{data.recipient && <Text>Shared with: {data.recipient}</Text>}
-								</>
+									{data.recipient && (
+										<Text isTruncated>Shared with: {data.recipient}</Text>
+									)}
+								</Box>
 							}
 							actionComp={
 								<Button
+									ml="-60px"
 									onClick={() => {
 										router.push(`${pathname}/${id}`);
 									}}
