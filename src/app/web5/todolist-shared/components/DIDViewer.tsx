@@ -1,11 +1,11 @@
+import copy from "copy-to-clipboard";
 import { ActionableItem } from "@/app/shared/ActionableItem";
 import { CopyIcon } from "@chakra-ui/icons";
 import { Box, IconButton, Text, useToast } from "@chakra-ui/react";
-import { useTodoListManager } from "./TodoDwnProvider";
-import copy from "copy-to-clipboard";
+import { useWeb5 } from "../providers/Web5Provider";
 
 export const DIDViewer = () => {
-	const { did } = useTodoListManager();
+	const { did } = useWeb5();
 	const toast = useToast();
 
 	const handleCopy = () => {

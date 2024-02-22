@@ -12,17 +12,24 @@ import {
 	retrieveTodos,
 	updateRecord,
 } from "./utils";
-import { Todo, TodoDwnContextState } from "./constants";
+import { Todo } from "../constants";
 import { useWeb5 } from "./Web5Provider";
 
-const TodoDwnContext = createContext<TodoDwnContextState>({
+interface TodoContextState {
+	todos: Todo[];
+	addTodo: any;
+	deleteTodo: any;
+	updateTodo: any;
+}
+
+const TodoContext = createContext<TodoContextState>({
 	todos: [],
 	addTodo: () => {},
 	deleteTodo: () => {},
 	updateTodo: () => {},
 });
 
-export const TodoDwnProvider = ({ children, protocolDefinition }) => {
+export const TodoProvider = ({ children, protocolDefinition }) => {
 	const [todos, setTodos] = useState<Todo[]>([]);
 	const { web5, did } = useWeb5();
 
@@ -98,7 +105,7 @@ export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 	);
 
 	const updateTodo = useCallback(
-		({ recordId, updatedTodoData, onSuccess }) => {
+		({ recordId, updatedTodoData, onSuccess }: any) => {
 			updateRecord(web5)({
 				recordId,
 				updatedTodoData,
@@ -130,13 +137,11 @@ export const TodoDwnProvider = ({ children, protocolDefinition }) => {
 		[todos, addTodo, deleteTodo, updateTodo],
 	);
 
-	return (
-		<TodoDwnContext.Provider value={value}>{children}</TodoDwnContext.Provider>
-	);
+	return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 };
 
 export const useTodoListManager = () => {
-	const context = useContext(TodoDwnContext);
+	const context = useContext(TodoContext);
 	if (!context) {
 		throw new Error("useTodoListManager must be used within a Web5Provider");
 	}

@@ -11,9 +11,9 @@ import {
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
-import { useTodoListManager } from "./TodoDwnProvider";
+import { useTodoListManager } from "../providers/TodoProvider";
 
-export const SharedTodoList = () => {
+export const List = () => {
 	const [newTodoDesc, setNewTodoDesc] = useState("");
 
 	const { todos, addTodo, deleteTodo, updateTodo } = useTodoListManager();

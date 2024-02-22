@@ -7,7 +7,12 @@ import {
 	useState,
 } from "react";
 import { configureProtocol, initDWN } from "./utils";
-import { Web5ContextState } from "./constants";
+
+interface Web5ContextState {
+	web5: any;
+	did: string;
+	updateProtocol: (protocolDefinition: any) => void;
+}
 
 const Web5Context = createContext<Web5ContextState>({
 	did: "",
