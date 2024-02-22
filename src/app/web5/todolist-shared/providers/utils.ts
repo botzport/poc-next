@@ -61,10 +61,10 @@ export const createListRecord = ({ web5, protocolDefinition }) => {
 	const protocol = protocolDefinition.protocol;
 	const schema = protocolDefinition.types.list.schema;
 
-	return async ({ newTodoData, recipientDID, onSuccess }) => {
+	return async ({ newListData, recipientDID, onSuccess }) => {
 		try {
 			const { record } = await web5.dwn.records.create({
-				data: newTodoData,
+				data: newListData,
 				message: {
 					protocol,
 					protocolPath: "list",
@@ -76,23 +76,26 @@ export const createListRecord = ({ web5, protocolDefinition }) => {
 
 			const data = await record.data.json();
 
-			const todo = {
+			const list = {
 				record,
 				data,
 				id: record.id,
 			};
 
-			const { status: sendStatus } = await record.send(recipientDID);
+			if (recipientDID) {
+				const { status: sendStatus } = await record.send(recipientDID);
 
-			if (sendStatus.code !== 202) {
-				console.error(
-					`Unable to send to target did ${JSON.stringify(sendStatus)}`,
-				);
-				return;
-			} else {
-				console.log("Shared list sent to recipient");
+				if (sendStatus.code !== 202) {
+					console.error(
+						`Unable to send to target did ${JSON.stringify(sendStatus)}`,
+					);
+					return;
+				} else {
+					console.log("Shared list sent to recipient");
+				}
 			}
-			onSuccess({ todo });
+
+			onSuccess({ list });
 		} catch (e) {
 			console.error("Error creating record", e);
 		}
@@ -192,6 +195,9 @@ export const createSharedList =
 		};
 
 		try {
+			// NOTE: this will fail if recipientDID is invalid.
+			// We will get the TypeError: cannot read record.data
+			// Error handling and error checking is not implemented
 			const { record } = await web5.dwn.records.create({
 				data: sharedListData,
 				message: {

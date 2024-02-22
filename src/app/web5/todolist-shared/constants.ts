@@ -19,10 +19,3 @@ export interface NewTodoData {
 	author: string;
 	recipient: string;
 }
-export interface TodoList {
-	"@type": "list";
-	title: string;
-	description: string;
-	author: string;
-	recipient: string;
-}

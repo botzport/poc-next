@@ -7,23 +7,44 @@ import {
 	useState,
 } from "react";
 import { createListRecord, retrieveLists } from "./utils";
-import { TodoList } from "../constants";
 import { useWeb5 } from "./Web5Provider";
 
+export interface NewListInput {
+	title: string;
+	description: string;
+	recipientDID: string;
+}
+
+export interface ListData {
+	"@type": "list";
+	title: string;
+	description: string;
+	author: string;
+	recipient?: string;
+}
+
+export interface List {
+	data: ListData;
+	id: string;
+	record: any;
+}
+
 export interface ListsContextState {
-	lists: TodoList[];
-	addList: any;
+	lists: List[];
+	createList: any;
 }
 
 const ListsContext = createContext<ListsContextState>({
 	lists: [],
-	addList: () => {},
+	createList: () => {},
 });
 
 export const ListsProvider = ({ children, protocolDefinition }: any) => {
-	const [lists, setLists] = useState<TodoList[]>([]);
+	const [lists, setLists] = useState<List[]>([]);
 	const { web5, did } = useWeb5();
 	useEffect(() => {
+		if (!web5 || !did) return;
+
 		retrieveLists({
 			web5,
 			protocolDefinition,
@@ -32,40 +53,35 @@ export const ListsProvider = ({ children, protocolDefinition }: any) => {
 				setLists(lists);
 			},
 		});
-	}, [web5, setLists, protocolDefinition]);
+	}, [web5, did, setLists, protocolDefinition]);
 
-	const getNewList = useCallback(
-		({
-			title,
-			description,
-			recipientDID,
-		}: {
-			title: string;
-			description: string;
-			recipientDID: string;
-		}) => {
+	const getNewListData = useCallback(
+		({ title, description, recipientDID }: NewListInput): ListData => {
 			return {
 				"@type": "list",
 				title,
 				description,
 				author: did,
-				recipient: recipientDID,
+				recipient: recipientDID || undefined,
 			};
 		},
 		[did],
 	);
 
-	const addList = useCallback(
-		({ newListData, recipientDID, onSuccess }: any) => {
-			const newShardListData = getNewList({
-				title: newListData.title,
-				description: newListData.description,
-				recipientDID: recipientDID,
-			});
+	const createList = useCallback(
+		({
+			newListInput,
+			onSuccess,
+		}: {
+			newListInput: NewListInput;
+			onSuccess: any;
+		}) => {
+			const newListData = getNewListData(newListInput);
+
 			// create the record in DWN
 			createListRecord({ web5, protocolDefinition })({
-				newTodoData: newShardListData,
-				recipientDID: did, // TODO: replace with actual recipientDID
+				newListData,
+				recipientDID: newListData.recipient, // TODO: replace with actual recipientDID
 				onSuccess: ({ list }: { list: any }) => {
 					console.log("....added list to DWN", list);
 					setLists([...lists, list]);
@@ -73,15 +89,15 @@ export const ListsProvider = ({ children, protocolDefinition }: any) => {
 				},
 			});
 		},
-		[web5, lists, getNewList, protocolDefinition, did],
+		[web5, lists, getNewListData, protocolDefinition],
 	);
 
 	const value = useMemo(
 		() => ({
 			lists,
-			addList,
+			createList,
 		}),
-		[lists, addList],
+		[lists, createList],
 	);
 
 	return (
@@ -89,10 +105,10 @@ export const ListsProvider = ({ children, protocolDefinition }: any) => {
 	);
 };
 
-export const useTodoListManager = () => {
+export const useLists = () => {
 	const context = useContext(ListsContext);
 	if (!context) {
-		throw new Error("useTodoListManager must be used within a Web5Provider");
+		throw new Error("useLists must be used within a ListsProvider");
 	}
 	return context;
 };
