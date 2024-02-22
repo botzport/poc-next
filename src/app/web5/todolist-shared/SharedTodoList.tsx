@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Web5 } from "@web5/api";
+import { useCallback, useState } from "react";
 import {
 	Checkbox,
 	Stack,

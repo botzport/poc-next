@@ -5,6 +5,8 @@ import { BasePage } from "@/app/shared/BasePage";
 import { useEffect, useState } from "react";
 import { TodoDwnProvider } from "./TodoDwnProvider";
 import { DIDViewer } from "./DIDViewer";
+import { Web5 } from "@web5/api";
+import { Web5Provider } from "./Web5Provider";
 
 // `app/page.tsx` is the UI for the `/` URL
 
@@ -39,11 +41,13 @@ export default function Page() {
 	if (!data) return null;
 	console.log("data", data);
 	return (
-		<BasePage title="Web5 Shared Todo List" description={PAGE_DESCRIPTION}>
+		<Web5Provider protocolDefinition={data}>
 			<TodoDwnProvider protocolDefinition={data}>
-				<DIDViewer />
-				<SharedTodoList />
+				<BasePage title="Web5 Shared Todo List" description={PAGE_DESCRIPTION}>
+					<DIDViewer />
+					<SharedTodoList />
+				</BasePage>
 			</TodoDwnProvider>
-		</BasePage>
+		</Web5Provider>
 	);
 }

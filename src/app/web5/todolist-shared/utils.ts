@@ -9,11 +9,42 @@ export const initDWN = async ({ onSuccess }) => {
 	console.error("Failed to connect to DWN");
 };
 
-export const createRecord = ({ web5, protocolDefinition }) => {
+export const createTodoRecord = ({ web5, protocolDefinition }) => {
+	const dataFormat = protocolDefinition.types.todo.dataFormats[0];
+	const protocol = protocolDefinition.protocol;
+	const schema = protocolDefinition.types.todo.schema;
+
+	return async ({ newTodoData, onSuccess }) => {
+		try {
+			const { record } = await web5.dwn.records.create({
+				data: newTodoData,
+				message: {
+					// protocol,
+					// protocolPath: "todo",
+					schema,
+					dataFormat,
+				},
+			});
+
+			const data = await record.data.json();
+
+			const todo = {
+				record,
+				data,
+				id: record.id,
+			};
+			onSuccess({ todo });
+		} catch (e) {
+			console.error("Error creating todo record", e);
+		}
+	};
+};
+
+export const createListRecord = ({ web5, protocolDefinition }) => {
 	const dataFormat = protocolDefinition.types.list.dataFormats[0];
 	const protocol = protocolDefinition.protocol;
 	const schema = protocolDefinition.types.list.schema;
-	debugger;
+
 	return async ({ newTodoData, recipientDID, onSuccess }) => {
 		try {
 			const { record } = await web5.dwn.records.create({
@@ -38,7 +69,9 @@ export const createRecord = ({ web5, protocolDefinition }) => {
 			const { status: sendStatus } = await record.send(recipientDID);
 
 			if (sendStatus.code !== 202) {
-				console.log("Unable to send to target did:" + sendStatus);
+				console.error(
+					`Unable to send to target did ${JSON.stringify(sendStatus)}`,
+				);
 				return;
 			} else {
 				console.log("Shared list sent to recipient");
@@ -85,8 +118,8 @@ export const retrieveTodos = async ({
 	web5,
 	protocolDefinition,
 	onSuccess,
-}) => {
-	const schema = protocolDefinition.types.list.schema;
+}: any) => {
+	const schema = protocolDefinition.types.todo.schema;
 	const { records } = await web5.dwn.records.query({
 		message: {
 			filter: {
@@ -103,6 +136,78 @@ export const retrieveTodos = async ({
 	}
 	onSuccess({ todos });
 };
+
+export const retrieveLists = async ({
+	web5,
+	protocolDefinition,
+	onSuccess,
+}: any) => {
+	const schema = protocolDefinition.types.list.schema;
+	const { records } = await web5.dwn.records.query({
+		message: {
+			filter: {
+				schema: schema,
+			},
+			dateSort: "createdAscending",
+		},
+	});
+	const lists = [];
+	for (let record of records) {
+		const data = await record.data.json();
+		const list = { record, data, id: record.id };
+		lists.push(list);
+	}
+	onSuccess({ lists });
+};
+
+export const createSharedList =
+	({ web5, protocolDefinition }) =>
+	async ({ title, description, author, recipient, onSuccess }) => {
+		const dataFormat = protocolDefinition.types.list.dataFormats[0];
+		const protocol = protocolDefinition.protocol;
+		const schema = protocolDefinition.types.list.schema;
+
+		const sharedListData = {
+			"@type": "list",
+			title,
+			description,
+			author,
+			recipient,
+		};
+
+		try {
+			const { record } = await web5.dwn.records.create({
+				data: sharedListData,
+				message: {
+					protocol,
+					protocolPath: "list",
+					schema,
+					dataFormat,
+					recipient,
+				},
+			});
+
+			const data = await record.data.json();
+
+			const sharedList = {
+				record,
+				data,
+				id: record.id,
+			};
+
+			const { status: sendStatus } = await record.send(recipient);
+
+			if (sendStatus.code !== 202) {
+				console.log("Unable to send to target did:" + sendStatus);
+				return;
+			} else {
+				console.log("Shared list sent to recipient");
+			}
+			onSuccess({ sharedList });
+		} catch (e) {
+			console.error("Error creating shared list", e);
+		}
+	};
 
 // checks if the protocol is installed and installs it if it isn't
 export const configureProtocol = async ({ web5, protocolDefinition }) => {
