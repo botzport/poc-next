@@ -1,31 +1,15 @@
 "use client";
 
-import { List } from "./components/List";
-import { BasePage } from "@/app/shared/BasePage";
 import { useEffect, useState } from "react";
-import { TodoProvider } from "./providers/TodoProvider";
+import { BasePage } from "@/app/shared/BasePage";
 import { DIDViewer } from "./components/DIDViewer";
-import { Web5Provider } from "./providers/Web5Provider";
+import { Web5Provider, ListsProvider } from "./providers";
+import { getData } from "./providers/utils";
+import { Lists } from "./components/Lists";
 
 // `app/page.tsx` is the UI for the `/` URL
 
 const PAGE_DESCRIPTION = "multi-user web5 todo list with DWN sync";
-
-async function getData({ onSuccess }) {
-	const res = await fetch("http://localhost:3000/api/todolist-shared", {
-		cache: "no-cache",
-	});
-	// The return value is *not* serialized
-	// You can return Date, Map, Set, etc.
-
-	if (!res.ok) {
-		// This will activate the closest `error.js` Error Boundary
-		throw new Error(`Failed to fetch data ${JSON.stringify(res)}`);
-	}
-	const resp = await res.json();
-	onSuccess(resp);
-	return resp;
-}
 
 export default function Page() {
 	const [data, setData] = useState(null);
@@ -43,9 +27,9 @@ export default function Page() {
 		<Web5Provider protocolDefinition={data}>
 			<BasePage title="Web5 Shared Todo List" description={PAGE_DESCRIPTION}>
 				<DIDViewer />
-				<TodoProvider protocolDefinition={data}>
-					<List />
-				</TodoProvider>
+				<ListsProvider protocolDefinition={data}>
+					<Lists />
+				</ListsProvider>
 			</BasePage>
 		</Web5Provider>
 	);

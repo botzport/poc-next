@@ -29,7 +29,7 @@ const TodoContext = createContext<TodoContextState>({
 	updateTodo: () => {},
 });
 
-export const TodoProvider = ({ children, protocolDefinition }) => {
+export const ListProvider = ({ children, protocolDefinition }) => {
 	const [todos, setTodos] = useState<Todo[]>([]);
 	const { web5, did } = useWeb5();
 
@@ -140,7 +140,7 @@ export const TodoProvider = ({ children, protocolDefinition }) => {
 	return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
 };
 
-export const useTodoListManager = () => {
+export const useListManager = () => {
 	const context = useContext(TodoContext);
 	if (!context) {
 		throw new Error("useTodoListManager must be used within a Web5Provider");
