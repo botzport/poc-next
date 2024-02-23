@@ -47,6 +47,7 @@ export const ListsProvider = ({ children, protocolDefinition }: any) => {
 
 		retrieveLists({
 			web5,
+			did,
 			protocolDefinition,
 			onSuccess: ({ lists }: any) => {
 				console.log("....got todo lists from DWN", lists);

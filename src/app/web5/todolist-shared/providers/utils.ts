@@ -117,6 +117,7 @@ export const createListRecord = ({ web5, protocolDefinition }) => {
 					);
 					return;
 				} else {
+					// success case
 					console.log("Shared list sent to recipient", recipientDID);
 				}
 			}
@@ -196,13 +197,22 @@ export const retrieveList = async ({ web5, listId, onSuccess }: any) => {
 	onSuccess({ todos, list });
 };
 
+const getDidDocument = async ({ web5, did }) => {
+	const resolution = await web5.did.resolve(did);
+	const didDocument = resolution.didDocument;
+	console.log("didDocument", didDocument);
+	return didDocument;
+};
+
 export const retrieveLists = async ({
 	web5,
+	did,
 	protocolDefinition,
 	onSuccess,
 }: any) => {
 	const schema = protocolDefinition.types.list.schema;
 	const { records } = await web5.dwn.records.query({
+		from: did,
 		message: {
 			filter: {
 				schema,
@@ -216,6 +226,9 @@ export const retrieveLists = async ({
 		const list = { record, data, id: record.id };
 		lists.push(list);
 	}
+
+	console.log("didDocument", getDidDocument({ web5, did }));
+
 	onSuccess({ lists });
 };
 
