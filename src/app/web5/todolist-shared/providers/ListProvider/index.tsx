@@ -49,7 +49,7 @@ const TodoContext = createContext<TodoContextState>({
 
 export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 	const [todos, setTodos] = useState<Todo[]>([]);
-	const [list, setList] = useState<List[]>([]);
+	const [list, setList] = useState<List | null>(null);
 	const { web5, did } = useWeb5();
 
 	const retrieveTodoList = useMemo(
@@ -117,7 +117,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			const newTodoData = getNewTodoData({
 				completed: newTodoInput.completed,
 				description: newTodoInput.description,
-				recipientDID: recipientDID ?? getTodoRecipient({ myDID: did, list }),
+				recipientDID: recipientDID ?? getTodoRecipient({ did, list }),
 			});
 
 			createTodoRecord({

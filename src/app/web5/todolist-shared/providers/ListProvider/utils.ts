@@ -9,7 +9,6 @@ export const getTodoRecipient = ({
 	did: string;
 	list: { author: string; recipient: string };
 }) => {
-	debugger;
 	if (did === list.author) {
 		return list.recipient;
 	} else {
@@ -24,7 +23,7 @@ export const genCreateTodoRecord = ({
 }: {
 	web5: Web5;
 	did: string;
-	protocolDefinition: unknown;
+	protocolDefinition: any;
 }) => {
 	const dataFormat = protocolDefinition.types.todo.dataFormats[0];
 	const protocol = protocolDefinition.protocol;
@@ -43,6 +42,16 @@ export const genCreateTodoRecord = ({
 					contextId: newTodoData.parentId,
 				},
 			});
+
+			if (!record) {
+				console.error("Error creating record for new todo");
+				return;
+			}
+
+			// always send to self because we want the the remote datastore as source of truth
+			// for both sender and recipient
+			const { status: sendToSelfStatus } = await record.send(did);
+			console.log("Sending this todo to self", sendToSelfStatus);
 
 			const data = await record.data.json();
 
@@ -110,25 +119,47 @@ export const genRetrieveTodoList =
 	({ web5, did }: { web5: Web5; did: string }) =>
 	async ({ listId, onSuccess }: { listId: string; onSuccess: any }) => {
 		// fetch shared list details from remote datastore
-		const { record: listRecord } = await web5.dwn.records.read({
-			from: did,
-			message: {
-				filter: {
-					recordId: listId,
+		const { record: listRecord, status: readListStatus } =
+			await web5.dwn.records.read({
+				from: did,
+				message: {
+					filter: {
+						recordId: listId,
+					},
 				},
-			},
-		});
+			});
+		const { records: listRecords, status: queryListStatus } =
+			await web5.dwn.records.query({
+				from: did,
+				message: {
+					filter: {
+						recordId: listId,
+					},
+				},
+			});
 
-		const list = await listRecord?.data.json();
-		if (!list) {
-			console.error("Error reading list record");
+		// TODO: why is `read` not finding that record?
+		if (!listRecord) {
+			console.error("Error reading list record", readListStatus);
+			// return;
+		}
+
+		// const list = await listRecord.data.json();
+		// if (!list) {
+		// 	console.error("Error reading list data");
+		// 	return;
+		// }
+
+		if (!listRecords || listRecords.length < 1) {
+			console.error("Error querying list record", queryListStatus);
 			return;
 		}
-		console.log("debug: list", list);
+
+		const list = await listRecords[0].data.json();
 
 		// fetch todos under list
 		const { records: todoRecords = [] } = await web5.dwn.records.query({
-			from: "TEST_DID",
+			from: did,
 			message: {
 				filter: {
 					parentId: listId,
@@ -137,7 +168,6 @@ export const genRetrieveTodoList =
 			},
 		});
 
-		console.log("debug: todoRecords", todoRecords);
 		// add entry to array
 
 		const todos = [];
