@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { BasePage } from "@/app/shared/BasePage";
 import { DIDViewer } from "./components/DIDViewer";
-import { Web5Provider, ListsProvider } from "./providers";
-import { getData } from "./providers/utils";
+
 import { Lists } from "./components/Lists";
+import { getData } from "./components/utils";
+import { ListsProvider, Web5Provider } from "./providers";
 
 // `app/page.tsx` is the UI for the `/` URL
 

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { BasePage } from "@/app/shared/BasePage";
 import { List } from "../components/List";
 import { Web5Provider, ListProvider } from "../providers";
-import { getData } from "../providers/utils";
+import { getData } from "../components/utils";
 
 // `app/page.tsx` is the UI for the `/` URL
 

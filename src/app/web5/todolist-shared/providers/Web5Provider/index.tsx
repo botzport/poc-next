@@ -6,6 +6,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { Web5 } from "@web5/api";
 import { configureProtocol, initDWN } from "./utils";
 
 interface Web5ContextState {
@@ -20,14 +21,20 @@ const Web5Context = createContext<Web5ContextState>({
 	updateProtocol: () => {},
 });
 
-export const Web5Provider = ({ children, protocolDefinition }) => {
-	const [web5, setWeb5] = useState(null);
+export const Web5Provider = ({
+	children,
+	protocolDefinition,
+}: {
+	children: React.ReactNode;
+	protocolDefinition: unknown;
+}) => {
+	const [web5, setWeb5] = useState<Web5 | null>(null);
 	const [did, setDID] = useState("");
 
 	useEffect(() => {
 		// create DID and Web5 instance
 		initDWN({
-			onSuccess: ({ web5, did }) => {
+			onSuccess: ({ web5, did }: { web5: Web5; did: string }) => {
 				setWeb5(web5);
 				setDID(did);
 				configureProtocol({ web5, did, protocolDefinition });
@@ -36,7 +43,7 @@ export const Web5Provider = ({ children, protocolDefinition }) => {
 	}, [protocolDefinition]);
 
 	const updateProtocol = useCallback(
-		(protocolDefinition) => {
+		(protocolDefinition: unknown) => {
 			configureProtocol({ web5, protocolDefinition });
 		},
 		[web5],

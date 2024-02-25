@@ -7,7 +7,7 @@ import {
 	useState,
 } from "react";
 import { createListRecord, retrieveLists } from "./utils";
-import { useWeb5 } from "./Web5Provider";
+import { useWeb5 } from "../Web5Provider";
 
 export interface NewListInput {
 	title: string;

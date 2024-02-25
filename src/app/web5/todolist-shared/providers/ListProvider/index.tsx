@@ -7,14 +7,14 @@ import {
 	useState,
 } from "react";
 import {
-	createTodoRecord,
-	deleteRecord,
 	getTodoRecipient,
-	retrieveList,
-	updateRecord,
+	genCreateTodoRecord,
+	genDeleteTodoRecord,
+	genRetrieveTodoList,
+	genUpdateTodoRecord,
 } from "./utils";
-import { useWeb5 } from "./Web5Provider";
-import { List } from "./ListsProvider";
+import { useWeb5 } from "../Web5Provider";
+import { List } from "../ListsProvider";
 
 export interface Todo {
 	record: any;
@@ -52,12 +52,27 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 	const [list, setList] = useState<List[]>([]);
 	const { web5, did } = useWeb5();
 
+	const retrieveTodoList = useMemo(
+		() => genRetrieveTodoList({ web5, did }),
+		[web5, did],
+	);
+	const createTodoRecord = useMemo(
+		() => genCreateTodoRecord({ web5, did, protocolDefinition }),
+		[web5, did, protocolDefinition],
+	);
+	const deleteTodoRecord = useMemo(
+		() => genDeleteTodoRecord({ web5, did }),
+		[web5, did],
+	);
+	const updateTodoRecord = useMemo(
+		() => genUpdateTodoRecord({ web5, did }),
+		[web5, did],
+	);
+
 	useEffect(() => {
 		if (!web5 || !did) return;
 
-		retrieveList({
-			web5,
-			did,
+		retrieveTodoList({
 			listId,
 			onSuccess: ({ todos, list }) => {
 				console.log("....got todos and list from DWN", todos, list);
@@ -65,7 +80,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 				setList(list);
 			},
 		});
-	}, [setTodos, listId, did, web5]);
+	}, [retrieveTodoList, setTodos, listId, did, web5]);
 
 	const getNewTodoData = useCallback(
 		({
@@ -99,30 +114,27 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			recipientDID?: string;
 			onSuccess: any;
 		}) => {
-			debugger;
 			const newTodoData = getNewTodoData({
 				completed: newTodoInput.completed,
 				description: newTodoInput.description,
 				recipientDID: recipientDID ?? getTodoRecipient({ myDID: did, list }),
 			});
-			console.log("debug: newTodoData", newTodoData);
-			// create the record in DWN
-			createTodoRecord({ web5, protocolDefinition })({
+
+			createTodoRecord({
 				newTodoData: newTodoData,
 				onSuccess: ({ todo }: { todo: Todo }) => {
-					console.log("....added todo to DWN", todo);
 					setTodos([...todos, todo]);
 					onSuccess();
 				},
 			});
 		},
-		[web5, todos, did, list, protocolDefinition, getNewTodoData],
+		[did, todos, list, createTodoRecord, getNewTodoData],
 	);
 
 	const deleteTodo = useCallback(
 		({ recordId, onSuccess }: any) => {
 			// create the record in DWN
-			deleteRecord(web5)({
+			deleteTodoRecord({
 				recordId,
 				onSuccess: () => {
 					console.log(`....deleted todo ${recordId} from DWN`);
@@ -131,12 +143,12 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 				},
 			});
 		},
-		[web5, todos],
+		[todos, deleteTodoRecord],
 	);
 
 	const updateTodo = useCallback(
 		({ recordId, updatedTodoData, onSuccess }: any) => {
-			updateRecord(web5)({
+			updateTodoRecord({
 				recordId,
 				updatedTodoData,
 				onSuccess: () => {
@@ -154,7 +166,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			});
 			onSuccess();
 		},
-		[web5, todos],
+		[todos, updateTodoRecord],
 	);
 
 	const value = useMemo(
