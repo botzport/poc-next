@@ -22,7 +22,7 @@ export default function Page() {
 	}, [setData]);
 
 	if (!data) return null;
-	console.log("data", data);
+
 	return (
 		<Web5Provider protocolDefinition={data}>
 			<BasePage title="Web5 Shared Todo List" description={PAGE_DESCRIPTION}>

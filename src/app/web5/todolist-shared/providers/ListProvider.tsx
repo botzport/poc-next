@@ -57,6 +57,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 
 		retrieveList({
 			web5,
+			did,
 			listId,
 			onSuccess: ({ todos, list }) => {
 				console.log("....got todos and list from DWN", todos, list);
@@ -70,23 +71,22 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 		({
 			completed,
 			description,
-		}: // recipientDID,
-		{
+			recipientDID,
+		}: {
 			completed: boolean;
 			description: string;
-			// recipientDID: string;
+			recipientDID: string;
 		}): TodoData => {
 			return {
 				"@type": "todo",
 				completed,
 				description,
 				author: did,
-				// TODO: add ability to assign todo to someone
-				recipient: getTodoRecipient({ myDID: did, list }),
+				recipient: recipientDID,
 				parentId: listId,
 			};
 		},
-		[did, list, listId],
+		[did, listId],
 	);
 
 	const createTodo = useCallback(
@@ -96,15 +96,16 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			onSuccess,
 		}: {
 			newTodoInput: any;
-			recipientDID: any;
+			recipientDID?: string;
 			onSuccess: any;
 		}) => {
+			debugger;
 			const newTodoData = getNewTodoData({
 				completed: newTodoInput.completed,
 				description: newTodoInput.description,
-				// TODO: add ability to assign todo to someone
-				// recipientDID: recipientDID,
+				recipientDID: recipientDID ?? getTodoRecipient({ myDID: did, list }),
 			});
+			console.log("debug: newTodoData", newTodoData);
 			// create the record in DWN
 			createTodoRecord({ web5, protocolDefinition })({
 				newTodoData: newTodoData,
@@ -115,7 +116,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 				},
 			});
 		},
-		[web5, todos, protocolDefinition, getNewTodoData],
+		[web5, todos, did, list, protocolDefinition, getNewTodoData],
 	);
 
 	const deleteTodo = useCallback(

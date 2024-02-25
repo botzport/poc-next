@@ -28,6 +28,7 @@ export const initDWN = async ({ onSuccess }) => {
 // for a shared todo list, if I created the list, then the recipient of the todo is always me (my todo)
 // if someone else created the list, the recipient is always them (their todo)
 export const getTodoRecipient = ({ myDID, list }) => {
+	debugger;
 	if (myDID === list.author) {
 		return list.recipient;
 	} else {
@@ -64,13 +65,17 @@ export const createTodoRecord = ({ web5, protocolDefinition }) => {
 
 			const { recipient } = newTodoData;
 			if (recipient) {
+				console.log("Sending this todo record to recipient", record);
 				const { status: sendStatus } = await record.send(recipient);
 
 				if (sendStatus.code !== 202) {
-					console.log("Unable to send to target did:" + sendStatus);
+					console.error(
+						`Unable to send to target did ${JSON.stringify(sendStatus)}`,
+					);
 					return;
 				} else {
-					console.log("Sent todo to recipient");
+					// success case
+					console.log("Shared todo sent to recipient", recipient);
 				}
 			}
 
@@ -81,7 +86,15 @@ export const createTodoRecord = ({ web5, protocolDefinition }) => {
 	};
 };
 
-export const createListRecord = ({ web5, protocolDefinition }) => {
+export const createListRecord = ({
+	web5,
+	did,
+	protocolDefinition,
+}: {
+	web5: Web5;
+	did: string;
+	protocolDefinition: any;
+}) => {
 	const dataFormat = protocolDefinition.types.list.dataFormats[0];
 	const protocol = protocolDefinition.protocol;
 	const schema = protocolDefinition.types.list.schema;
@@ -98,6 +111,16 @@ export const createListRecord = ({ web5, protocolDefinition }) => {
 					recipient: recipientDID,
 				},
 			});
+
+			if (!record) {
+				console.error("Error creating record for new list");
+				return;
+			}
+
+			// always send to self because we want the the remote datastore as source of truth
+			// for both sender and recipient
+			const { status: sendToSelfStatus } = await record.send(did);
+			console.log("Sending this list to self", sendToSelfStatus);
 
 			const data = await record.data.json();
 
@@ -160,9 +183,20 @@ export const updateRecord =
 		onSuccess();
 	};
 
-export const retrieveList = async ({ web5, listId, onSuccess }: any) => {
-	// fetch shared list details
+export const retrieveList = async ({
+	web5,
+	did,
+	listId,
+	onSuccess,
+}: {
+	web5: Web5;
+	did: string;
+	listId: string;
+	onSuccess: any;
+}) => {
+	// fetch shared list details from remote datastore
 	const { record: listRecord } = await web5.dwn.records.read({
+		from: did,
 		message: {
 			filter: {
 				recordId: listId,
@@ -175,9 +209,11 @@ export const retrieveList = async ({ web5, listId, onSuccess }: any) => {
 		console.error("Error reading list record");
 		return;
 	}
+	console.log("debug: list", list);
 
 	// fetch todos under list
-	const { records: todoRecords } = await web5.dwn.records.query({
+	const { records: todoRecords = [] } = await web5.dwn.records.query({
+		from: "TEST_DID",
 		message: {
 			filter: {
 				parentId: listId,
@@ -186,6 +222,7 @@ export const retrieveList = async ({ web5, listId, onSuccess }: any) => {
 		},
 	});
 
+	console.log("debug: todoRecords", todoRecords);
 	// add entry to array
 
 	const todos = [];
@@ -197,10 +234,10 @@ export const retrieveList = async ({ web5, listId, onSuccess }: any) => {
 	onSuccess({ todos, list });
 };
 
-const getDidDocument = async ({ web5, did }) => {
+export const getDidDocument = async ({ web5, did }) => {
 	const resolution = await web5.did.resolve(did);
 	const didDocument = resolution.didDocument;
-	console.log("didDocument", didDocument);
+	// console.log("didDocument", didDocument);
 	return didDocument;
 };
 
@@ -226,8 +263,6 @@ export const retrieveLists = async ({
 		const list = { record, data, id: record.id };
 		lists.push(list);
 	}
-
-	console.log("didDocument", getDidDocument({ web5, did }));
 
 	onSuccess({ lists });
 };

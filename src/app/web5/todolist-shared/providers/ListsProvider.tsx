@@ -80,17 +80,16 @@ export const ListsProvider = ({ children, protocolDefinition }: any) => {
 			const newListData = getNewListData(newListInput);
 
 			// create the record in DWN
-			createListRecord({ web5, protocolDefinition })({
+			createListRecord({ web5, did, protocolDefinition })({
 				newListData,
 				recipientDID: newListData.recipient, // TODO: replace with actual recipientDID
 				onSuccess: ({ list }: { list: any }) => {
-					console.log("....added list to DWN", list);
 					setLists([...lists, list]);
 					onSuccess();
 				},
 			});
 		},
-		[web5, lists, getNewListData, protocolDefinition],
+		[web5, did, lists, getNewListData, protocolDefinition],
 	);
 
 	const value = useMemo(
