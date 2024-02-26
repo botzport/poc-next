@@ -1,19 +1,22 @@
 import { Web5 } from "@web5/api";
+import { ListData } from "../ListsProvider";
 
 // for a shared todo list, if I created the list, then the recipient of the todo is always me (my todo)
 // if someone else created the list, the recipient is always them (their todo)
-export const getTodoRecipient = ({
+export const getTodoRecipients = ({
 	did,
 	list,
 }: {
 	did: string;
-	list: { author: string; recipient: string };
-}) => {
-	if (did === list.author) {
-		return list.recipient;
-	} else {
-		return list.author;
-	}
+	list: ListData | undefined;
+}): string[] => {
+	const res = new Set<string>();
+
+	res.add(did);
+	res.add(list?.author ?? did);
+	res.add(list?.recipient ?? did);
+
+	return Array.from(res);
 };
 
 export const genCreateTodoRecord = ({
@@ -29,7 +32,15 @@ export const genCreateTodoRecord = ({
 	const protocol = protocolDefinition.protocol;
 	const schema = protocolDefinition.types.todo.schema;
 
-	return async ({ newTodoData, onSuccess }) => {
+	return async ({
+		newTodoData,
+		recipients,
+		onSuccess,
+	}: {
+		newTodoData: any;
+		recipients: string[];
+		onSuccess: any;
+	}) => {
 		try {
 			const { record } = await web5.dwn.records.create({
 				data: newTodoData,
@@ -44,14 +55,11 @@ export const genCreateTodoRecord = ({
 			});
 
 			if (!record) {
+				// TODO: EP-44 if the list recipient tries to add a todo to the list, the call to
+				// `web5.dwn.records.create` will fail to create a record
 				console.error("Error creating record for new todo");
 				return;
 			}
-
-			// always send to self because we want the the remote datastore as source of truth
-			// for both sender and recipient
-			const { status: sendToSelfStatus } = await record.send(did);
-			console.log("Sending this todo to self", sendToSelfStatus);
 
 			const data = await record.data.json();
 
@@ -61,21 +69,9 @@ export const genCreateTodoRecord = ({
 				id: record.id,
 			};
 
-			const { recipient } = newTodoData;
-			if (recipient) {
-				console.log("Sending this todo record to recipient", record);
-				const { status: sendStatus } = await record.send(recipient);
-
-				if (sendStatus.code !== 202) {
-					console.error(
-						`Unable to send to target did ${JSON.stringify(sendStatus)}`,
-					);
-					return;
-				} else {
-					// success case
-					console.log("Shared todo sent to recipient", recipient);
-				}
-			}
+			await Promise.all(recipients.map((r) => record.send(r))).then((resp) => {
+				console.log("Sent this todo to recipients", resp);
+			});
 
 			onSuccess({ todo });
 		} catch (e) {
@@ -86,12 +82,30 @@ export const genCreateTodoRecord = ({
 
 export const genDeleteTodoRecord =
 	({ web5, did }: { web5: Web5; did: string }) =>
-	async ({ recordId, onSuccess }) => {
-		// Delete the record in DWN
-		await web5.dwn.records.delete({
-			message: {
-				recordId,
-			},
+	async ({
+		recordId,
+		recipients,
+		onSuccess,
+	}: {
+		recordId: string;
+		recipients: string[];
+		onSuccess: any;
+	}) => {
+		await Promise.all(
+			recipients.map((r) =>
+				web5.dwn.records.delete({
+					from: r,
+					message: {
+						recordId,
+					},
+				}),
+			),
+		).then((resp) => {
+			// TODO: EP-44 We will get `ProtocolAuthorizationActionNotAllowed: inbound message action not allowed for author`
+			// when performing the delete operation on a DWN that does not belong to the current user's DID
+			// Do we just want to send an update to the other person's DWN with the tombstone
+			// and the other person can see it and decide if that record should be deleted?
+			console.log("Deleted this todo from recipients", resp);
 		});
 
 		onSuccess();
@@ -99,9 +113,20 @@ export const genDeleteTodoRecord =
 
 export const genUpdateTodoRecord =
 	({ web5, did }: { web5: Web5; did: string }) =>
-	async ({ recordId, updatedTodoData, onSuccess }) => {
+	async ({
+		recordId,
+		recipients,
+		updatedTodoData,
+		onSuccess,
+	}: {
+		recordId: string;
+		recipients: string[];
+		updatedTodoData: any;
+		onSuccess: any;
+	}) => {
 		// Get the record in DWN
 		const { record } = await web5.dwn.records.read({
+			from: did,
 			message: {
 				filter: {
 					recordId,
@@ -109,8 +134,21 @@ export const genUpdateTodoRecord =
 			},
 		});
 
+		if (!record) {
+			console.error("Error querying todo record");
+			return;
+		}
+
 		// Update the record in DWN
 		await record.update({ data: updatedTodoData });
+
+		await Promise.all(recipients.map((r) => record.send(r))).then((resp) => {
+			// TODO: EP-44 if the list recipient tries to update the todos from the list and send the updated record
+			// to the author, the author send attempt will fail with
+			// `ProtocolAuthorizationActionNotAllowed: inbound message action not allowed for author`
+			// Is this due to the protocol configuration?
+			console.log("Sent this todo to recipients", resp);
+		});
 
 		onSuccess();
 	};
@@ -138,17 +176,11 @@ export const genRetrieveTodoList =
 				},
 			});
 
-		// TODO: why is `read` not finding that record?
+		// TODO: EP-43 create issue in web5 api repo:
+		// why is `read` not finding that record and returning 404?
 		if (!listRecord) {
 			console.error("Error reading list record", readListStatus);
-			// return;
 		}
-
-		// const list = await listRecord.data.json();
-		// if (!list) {
-		// 	console.error("Error reading list data");
-		// 	return;
-		// }
 
 		if (!listRecords || listRecords.length < 1) {
 			console.error("Error querying list record", queryListStatus);

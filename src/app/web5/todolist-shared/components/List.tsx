@@ -8,6 +8,7 @@ import {
 	Box,
 	Input,
 	StackDivider,
+	Text,
 } from "@chakra-ui/react";
 import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { ActionableItem } from "@/app/shared/ActionableItem";
@@ -16,7 +17,10 @@ import { useList } from "../providers/ListProvider";
 export const List = () => {
 	const [newTodoDesc, setNewTodoDesc] = useState("");
 
-	const { todos, createTodo, deleteTodo, updateTodo } = useList();
+	// TODO: EP-44 we are exposing the isReadOnly state to prevent the recipient from making any update and deletes to the records
+	// because all CRUD operations are done on both author's and recipient's lists. Recipients cannot affect the author's list
+	// for some reason. There will be a research spike later to understand why this is happening.
+	const { todos, isReadOnly, createTodo, deleteTodo, updateTodo } = useList();
 	const handleNewTodoChange = (event) => setNewTodoDesc(event.target.value);
 
 	const handleAddTodo = useCallback(() => {
@@ -53,12 +57,20 @@ export const List = () => {
 
 	return (
 		<>
+			{isReadOnly && (
+				<Text>
+					Only the author of this list can edit this list. You are not the
+					author but the author has granted you permission to view the latest
+					todos from this list.
+				</Text>
+			)}
 			<ActionableItem
 				itemComponent={
 					<Input
 						placeholder="a new todo"
 						value={newTodoDesc}
 						onChange={handleNewTodoChange}
+						disabled={isReadOnly}
 					/>
 				}
 				actionComp={
@@ -68,6 +80,7 @@ export const List = () => {
 						colorScheme="blue"
 						icon={<AddIcon />}
 						onClick={handleAddTodo}
+						isDisabled={isReadOnly}
 					/>
 				}
 			/>
@@ -90,6 +103,7 @@ export const List = () => {
 								colorScheme="green"
 								isChecked={data.completed}
 								onChange={handleToggleTodo({ todoData: data, recordId: id })}
+								disabled={isReadOnly}
 							>
 								{data.description}
 							</Checkbox>
@@ -101,6 +115,7 @@ export const List = () => {
 								colorScheme="red"
 								icon={<DeleteIcon />}
 								onClick={() => handleDeleteTodo({ recordId: id })}
+								isDisabled={isReadOnly}
 							/>
 						}
 					/>

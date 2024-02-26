@@ -7,14 +7,14 @@ import {
 	useState,
 } from "react";
 import {
-	getTodoRecipient,
+	getTodoRecipients,
 	genCreateTodoRecord,
 	genDeleteTodoRecord,
 	genRetrieveTodoList,
 	genUpdateTodoRecord,
 } from "./utils";
 import { useWeb5 } from "../Web5Provider";
-import { List } from "../ListsProvider";
+import { ListData } from "../ListsProvider";
 
 export interface Todo {
 	record: any;
@@ -29,12 +29,12 @@ export interface TodoData {
 	completed: boolean;
 	description: string;
 	author: string;
-	recipient: string;
 	parentId: string;
 }
 
 interface TodoContextState {
 	todos: Todo[];
+	isReadOnly?: boolean;
 	createTodo: any;
 	deleteTodo: any;
 	updateTodo: any;
@@ -42,6 +42,7 @@ interface TodoContextState {
 
 const TodoContext = createContext<TodoContextState>({
 	todos: [],
+	isReadOnly: undefined,
 	createTodo: () => {},
 	deleteTodo: () => {},
 	updateTodo: () => {},
@@ -49,7 +50,7 @@ const TodoContext = createContext<TodoContextState>({
 
 export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 	const [todos, setTodos] = useState<Todo[]>([]);
-	const [list, setList] = useState<List | null>(null);
+	const [list, setList] = useState<ListData | undefined>(undefined);
 	const { web5, did } = useWeb5();
 
 	const retrieveTodoList = useMemo(
@@ -86,18 +87,15 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 		({
 			completed,
 			description,
-			recipientDID,
 		}: {
 			completed: boolean;
 			description: string;
-			recipientDID: string;
 		}): TodoData => {
 			return {
 				"@type": "todo",
 				completed,
 				description,
 				author: did,
-				recipient: recipientDID,
 				parentId: listId,
 			};
 		},
@@ -117,11 +115,11 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			const newTodoData = getNewTodoData({
 				completed: newTodoInput.completed,
 				description: newTodoInput.description,
-				recipientDID: recipientDID ?? getTodoRecipient({ did, list }),
 			});
 
 			createTodoRecord({
 				newTodoData: newTodoData,
+				recipients: getTodoRecipients({ did, list }),
 				onSuccess: ({ todo }: { todo: Todo }) => {
 					setTodos([...todos, todo]);
 					onSuccess();
@@ -136,6 +134,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			// create the record in DWN
 			deleteTodoRecord({
 				recordId,
+				recipients: getTodoRecipients({ did, list }),
 				onSuccess: () => {
 					console.log(`....deleted todo ${recordId} from DWN`);
 					setTodos(todos.filter(({ id }) => id !== recordId));
@@ -143,14 +142,17 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 				},
 			});
 		},
-		[todos, deleteTodoRecord],
+		[todos, did, list, deleteTodoRecord],
 	);
 
 	const updateTodo = useCallback(
 		({ recordId, updatedTodoData, onSuccess }: any) => {
 			updateTodoRecord({
 				recordId,
-				updatedTodoData,
+				recipients: getTodoRecipients({ did, list }),
+				updatedTodoData: {
+					...updatedTodoData,
+				},
 				onSuccess: () => {
 					setTodos(
 						todos.map((todo) => {
@@ -166,17 +168,18 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 			});
 			onSuccess();
 		},
-		[todos, updateTodoRecord],
+		[todos, did, list, updateTodoRecord],
 	);
 
 	const value = useMemo(
 		() => ({
 			todos,
+			isReadOnly: list && list.author !== did,
 			createTodo,
 			deleteTodo,
 			updateTodo,
 		}),
-		[todos, createTodo, deleteTodo, updateTodo],
+		[todos, did, list, createTodo, deleteTodo, updateTodo],
 	);
 
 	return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;
