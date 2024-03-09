@@ -24,6 +24,7 @@ const Web5Context = createContext<Web5ContextState>({
 export const Web5Provider = ({
 	children,
 	protocolDefinition,
+	connectedDid,
 }: {
 	children: React.ReactNode;
 	protocolDefinition: unknown;
