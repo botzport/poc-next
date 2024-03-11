@@ -46,3 +46,9 @@ export const genCreateIdentity =
 			onSuccess({ did, keyUri });
 		}
 	};
+
+export const getDidDocument = async ({ did }: { did: string }) => {
+	const resolution = await DidDht.resolve(did);
+	console.log("....resolution", resolution);
+	return resolution.didDocument;
+};

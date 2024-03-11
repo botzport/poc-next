@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { useCallback, useState } from "react";
 import { useAgent } from "../providers/AgentProvider";
+import { getDidDocument } from "../providers/AgentProvider/utils";
 
 export const Profiles = () => {
 	const router = useRouter();
@@ -69,7 +70,10 @@ export const Profiles = () => {
 									size="sm"
 									icon={<ViewIcon />}
 									onClick={() => {
-										router.push(`${pathname}/${i.did}`);
+										// call a util function to retrieve DidDocument
+										getDidDocument({ did: i.did });
+
+										// router.push(`${pathname}/${i.did}`);
 									}}
 								/>
 								<IconButton

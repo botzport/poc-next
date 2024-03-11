@@ -22,11 +22,3 @@ export const initDWN = async ({
 	}
 	console.error("Failed to connect to DWN");
 };
-
-// Not used but can be useful
-export const getDidDocument = async ({ web5, did }) => {
-	const resolution = await web5.did.resolve(did);
-	const didDocument = resolution.didDocument;
-	// console.log("didDocument", didDocument);
-	return didDocument;
-};
