@@ -1,46 +1,14 @@
 import { Web5 } from "@web5/api";
 
-// checks if the protocol is installed and installs it if it isn't
-export const configureProtocol = async ({ web5, did, protocolDefinition }) => {
-	// query the list of existing protocols on the DWN
-	const { protocols, status } = await web5.dwn.protocols.query({
-		message: {
-			filter: {
-				protocol: protocolDefinition.protocol,
-			},
-		},
-	});
+const TEST_DID = "did:dht:u1ehqfo7jpryedm7rqxyazh51pao4cz9xo7nuwohc77bumx49zdo";
 
-	if (status.code !== 200) {
-		alert("Error querying protocols");
-		console.error("Error querying protocols", status);
-		return;
-	}
-
-	// if the protocol already exists, we return
-	if (protocols.length > 0) {
-		console.log("Protocol already exists");
-		return;
-	}
-
-	// configure protocol on local DWN
-	const { status: configureStatus, protocol } =
-		await web5.dwn.protocols.configure({
-			message: {
-				definition: protocolDefinition,
-			},
-		});
-
-	// sends the protocol configuration to the user's other DWeb Nodes
-	protocol.send(did);
-
-	console.log("Protocol configured", configureStatus, protocol);
-};
-
-export const initDWN = async ({ onSuccess }) => {
-	const { web5, did } = await Web5.connect();
-	if (web5 && did) {
-		onSuccess({ web5, did });
+// TODO: must pass both agent and connectedDid to Web5.connect
+export const initDWN = async ({ connectedDid, onSuccess }) => {
+	const { web5, did } = await Web5.connect({ connectedDid: TEST_DID });
+	// unless you pass the agent, the web5 connect will always bootstrap a new did
+	console.log("web5, did", web5, did);
+	if (web5) {
+		onSuccess({ web5 });
 		return;
 	}
 	console.error("Failed to connect to DWN");

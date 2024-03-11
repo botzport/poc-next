@@ -17,7 +17,7 @@ interface Web5ContextState {
 
 const Web5Context = createContext<Web5ContextState>({
 	did: "",
-	web5: [],
+	web5: null,
 	updateProtocol: () => {},
 });
 

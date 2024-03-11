@@ -10,7 +10,9 @@ export default function Page({ params }: { params: { slug: string } }) {
 	const did = params.slug ?? "";
 	return (
 		<BasePage title="Profile" description={`did: ${did}`}>
-			<Profile />
+			<Web5Provider did={did}>
+				<Profile />
+			</Web5Provider>
 		</BasePage>
 	);
 }

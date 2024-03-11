@@ -12,7 +12,7 @@ import { createAgent, genCreateIdentity } from "./utils";
 interface AgentContextState {
 	agent: any;
 	identities: any[];
-	addIdentity: (args: { name: string }) => void;
+	addIdentity: (args: { name: string; onSuccess: () => void }) => void;
 }
 
 const AgentContext = createContext<AgentContextState>({
@@ -23,7 +23,11 @@ const AgentContext = createContext<AgentContextState>({
 
 export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 	const [agent, setAgent] = useState<IdentityAgent | null>(null);
-	const [identities, setIdentities] = useState<any[]>([]);
+	const [identities, setIdentities] = useState<any[]>([
+		// TODO: temp for testing. Remove after identity agent works
+		{ name: "Default", did: "did:web5:default" },
+		{ name: "Default2", did: "did:web5:default2" },
+	]);
 
 	useEffect(() => {
 		createAgent({
@@ -37,12 +41,13 @@ export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 	const createIdentity = useMemo(() => genCreateIdentity(agent), [agent]);
 
 	const addIdentity = useCallback(
-		({ name }: { name: string }) => {
+		({ name, onSuccess }: { name: string; onSuccess: () => void }) => {
 			createIdentity({
 				name,
 				onSuccess: ({ did }) => {
 					console.log("identity created", did);
 					setIdentities((prev) => [...prev, { name, did }]);
+					onSuccess();
 				},
 			});
 		},
