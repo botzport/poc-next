@@ -1,20 +1,26 @@
 "use client";
 
-import { Box } from "@chakra-ui/react";
+import { Link, StackDivider, VStack } from "@chakra-ui/react";
+import { BasePage } from "./shared/BasePage";
 
 // `app/page.tsx` is the UI for the `/` URL
 
-const ROUTES = ["/web5/todolist", "web5/todolist-shared"];
+const ROUTES = ["web5/todolist", "web5/todolist-shared", "web5/identity-agent"];
 
 export default function Page() {
 	return (
-		<>
-			<h1>Hello, Home page!</h1>
-			{ROUTES.map((route) => (
-				<Box key={route}>
-					<a href={route}>{route}</a>
-				</Box>
-			))}
-		</>
+		<BasePage title="Standalone Web5 POC Apps">
+			<VStack
+				divider={<StackDivider borderColor="gray.200" />}
+				spacing={4}
+				align="stretch"
+			>
+				{ROUTES.map((route) => (
+					<Link href={route} key={route}>
+						{route}
+					</Link>
+				))}
+			</VStack>
+		</BasePage>
 	);
 }

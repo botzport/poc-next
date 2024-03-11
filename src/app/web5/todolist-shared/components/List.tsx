@@ -75,7 +75,7 @@ export const List = () => {
 				}
 				actionComp={
 					<IconButton
-						aria-label="delete"
+						aria-label="add"
 						size="sm"
 						colorScheme="blue"
 						icon={<AddIcon />}

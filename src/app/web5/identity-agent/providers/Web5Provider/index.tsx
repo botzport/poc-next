@@ -1,3 +1,5 @@
+import { IdentityAgent } from "@web5/identity-agent";
+import { Web5 } from "@web5/api";
 import {
 	createContext,
 	useCallback,
@@ -6,56 +8,44 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Web5 } from "@web5/api";
-import { configureProtocol, initDWN } from "./utils";
+import { initDWN } from "./utils";
 
 interface Web5ContextState {
 	web5: any;
-	did: string;
-	updateProtocol: (protocolDefinition: any) => void;
 }
 
 const Web5Context = createContext<Web5ContextState>({
-	did: "",
 	web5: null,
-	updateProtocol: () => {},
 });
 
 export const Web5Provider = ({
 	children,
-	protocolDefinition,
+	did,
+	agent,
 }: {
 	children: React.ReactNode;
-	protocolDefinition: unknown;
+	did: string;
+	agent: IdentityAgent;
 }) => {
 	const [web5, setWeb5] = useState<Web5 | null>(null);
-	const [did, setDID] = useState("");
 
 	useEffect(() => {
+		console.log(".....web5Provider: did", did);
 		// create DID and Web5 instance
 		initDWN({
-			onSuccess: ({ web5, did }: { web5: Web5; did: string }) => {
+			agent,
+			connectedDid: did,
+			onSuccess: ({ web5 }: { web5: Web5; did: string }) => {
 				setWeb5(web5);
-				setDID(did);
-				configureProtocol({ web5, did, protocolDefinition });
 			},
 		});
-	}, [protocolDefinition]);
-
-	const updateProtocol = useCallback(
-		(protocolDefinition: unknown) => {
-			configureProtocol({ web5, did, protocolDefinition });
-		},
-		[web5, did],
-	);
+	}, [did]);
 
 	const value = useMemo(
 		() => ({
-			did,
 			web5,
-			updateProtocol,
 		}),
-		[did, web5, updateProtocol],
+		[web5],
 	);
 
 	return <Web5Context.Provider value={value}>{children}</Web5Context.Provider>;
