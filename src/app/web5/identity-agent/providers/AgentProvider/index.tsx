@@ -17,6 +17,12 @@ interface AgentContextState {
 	addIdentity: (args: { name: string; onSuccess: () => void }) => void;
 }
 
+interface Identity {
+	name: string;
+	did: string;
+	keyUri: string;
+}
+
 const AgentContext = createContext<AgentContextState>({
 	agent: null,
 	keyManager: null,
@@ -28,11 +34,7 @@ export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 	const [agent, setAgent] = useState<IdentityAgent | null>(null);
 	const [keyManager, setKeyManager] = useState<LocalKeyManager | null>(null);
 
-	const [identities, setIdentities] = useState<any[]>([
-		// TODO: temp for testing. Remove after identity agent works
-		{ name: "Default", did: "did:web5:default" },
-		{ name: "Default2", did: "did:web5:default2" },
-	]);
+	const [identities, setIdentities] = useState<Identity[]>([]);
 
 	useEffect(() => {
 		createAgent({
