@@ -1,3 +1,4 @@
+import { LocalKeyManager } from "@web5/crypto";
 import { IdentityAgent } from "@web5/identity-agent";
 import { DidDht } from "@web5/dids";
 
@@ -11,11 +12,17 @@ export const createAgent = async ({ onSuccess }) => {
 };
 
 export const genCreateIdentity =
-	(agent: IdentityAgent) =>
+	({
+		agent,
+		keyManager,
+	}: {
+		agent: IdentityAgent;
+		keyManager: LocalKeyManager;
+	}) =>
 	async ({ name, onSuccess }) => {
 		if (!agent) return;
 		// Creates a DID using the DHT method and publishes the DID Document to the DHT
-		const didDht = await DidDht.create();
+		const didDht = await DidDht.create({ keyManager });
 		const portableDid = await didDht.export();
 		const didDocument = JSON.stringify(didDht.document);
 
@@ -30,7 +37,12 @@ export const genCreateIdentity =
 		// 	did: portableDid as any,
 		// });
 
+		const privateKey = portableDid.privateKeys?.[0];
+
 		console.log(".....portableDid", portableDid);
 		console.log(".....didDocument", didDocument);
-		onSuccess({ did });
+		if (privateKey) {
+			const keyUri = await keyManager.getKeyUri({ key: privateKey });
+			onSuccess({ did, keyUri });
+		}
 	};

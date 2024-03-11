@@ -17,6 +17,7 @@
 		"@types/react": "18.2.13",
 		"@types/react-dom": "18.2.6",
 		"@web5/api": "^0.8.4",
+		"@web5/crypto": "^0.4.0",
 		"@web5/dids": "^0.4.1",
 		"@web5/identity-agent": "^0.2.6",
 		"autoprefixer": "10.4.14",

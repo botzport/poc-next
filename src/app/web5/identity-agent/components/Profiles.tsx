@@ -1,10 +1,9 @@
 import { ActionableItem } from "@/app/shared/ActionableItem";
 import { useRouter, usePathname } from "next/navigation";
-import { BasePage } from "@/app/shared/BasePage";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, DownloadIcon, ViewIcon } from "@chakra-ui/icons";
 import {
 	Box,
-	Button,
+	HStack,
 	Heading,
 	IconButton,
 	Input,
@@ -20,9 +19,7 @@ export const Profiles = () => {
 	const pathname = usePathname();
 	const [newName, setNewName] = useState("");
 
-	const { addIdentity, identities } = useAgent();
-
-	console.log("identities", identities);
+	const { addIdentity, keyManager, identities } = useAgent();
 
 	const handleCreateNewIdentity = useCallback(() => {
 		console.log("creating new did with the name", newName);
@@ -60,18 +57,34 @@ export const Profiles = () => {
 						itemComponent={
 							<Box w="85%">
 								<Heading fontSize="m">{i.name}</Heading>
-								<Text mt={4}>{i.did}</Text>
+								<Text maxW="100%" isTruncated mt={4}>
+									{i.did}
+								</Text>
 							</Box>
 						}
 						actionComp={
-							<Button
-								ml="-60px"
-								onClick={() => {
-									router.push(`${pathname}/${i.did}`);
-								}}
-							>
-								Open
-							</Button>
+							<HStack ml="-60px">
+								<IconButton
+									aria-label="view"
+									size="sm"
+									icon={<ViewIcon />}
+									onClick={() => {
+										router.push(`${pathname}/${i.did}`);
+									}}
+								/>
+								<IconButton
+									aria-label="download"
+									size="sm"
+									icon={<DownloadIcon />}
+									onClick={async () => {
+										console.log("keyUri", i.keyUri);
+										const secretKey = await keyManager?.exportKey({
+											keyUri: i.keyUri,
+										});
+										console.log("exporting secretKey", secretKey);
+									}}
+								/>
+							</HStack>
 						}
 					/>
 				))}

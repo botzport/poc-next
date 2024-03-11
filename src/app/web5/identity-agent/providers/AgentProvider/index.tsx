@@ -6,23 +6,28 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { LocalKeyManager } from "@web5/crypto";
 import { IdentityAgent } from "@web5/identity-agent";
 import { createAgent, genCreateIdentity } from "./utils";
 
 interface AgentContextState {
 	agent: any;
+	keyManager: LocalKeyManager | null;
 	identities: any[];
 	addIdentity: (args: { name: string; onSuccess: () => void }) => void;
 }
 
 const AgentContext = createContext<AgentContextState>({
 	agent: null,
+	keyManager: null,
 	identities: [],
 	addIdentity: (args: { name: string }) => {},
 });
 
 export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 	const [agent, setAgent] = useState<IdentityAgent | null>(null);
+	const [keyManager, setKeyManager] = useState<LocalKeyManager | null>(null);
+
 	const [identities, setIdentities] = useState<any[]>([
 		// TODO: temp for testing. Remove after identity agent works
 		{ name: "Default", did: "did:web5:default" },
@@ -34,19 +39,24 @@ export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 			onSuccess: ({ agent }: { agent: IdentityAgent }) => {
 				console.log("agent created", agent);
 				setAgent(agent);
+				setKeyManager(new LocalKeyManager());
 			},
 		});
 	}, []);
-
-	const createIdentity = useMemo(() => genCreateIdentity(agent), [agent]);
+	console.log("agent", agent);
+	console.log("keyManager", keyManager);
+	const createIdentity = useMemo(
+		() => genCreateIdentity({ agent, keyManager }),
+		[agent, keyManager],
+	);
 
 	const addIdentity = useCallback(
 		({ name, onSuccess }: { name: string; onSuccess: () => void }) => {
 			createIdentity({
 				name,
-				onSuccess: ({ did }) => {
+				onSuccess: ({ did, keyUri }) => {
 					console.log("identity created", did);
-					setIdentities((prev) => [...prev, { name, did }]);
+					setIdentities((prev) => [...prev, { name, did, keyUri }]);
 					onSuccess();
 				},
 			});
@@ -59,8 +69,9 @@ export const AgentProvider = ({ children }: { children: React.ReactNode }) => {
 			agent,
 			identities,
 			addIdentity,
+			keyManager,
 		}),
-		[agent, identities, addIdentity],
+		[agent, identities, addIdentity, keyManager],
 	);
 
 	return (
