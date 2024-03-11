@@ -64,7 +64,7 @@ export const Web5Provider = ({
 export const useWeb5 = () => {
 	const context = useContext(Web5Context);
 	if (!context) {
-		throw new Error("useTodoListManager must be used within a Web5Provider");
+		throw new Error("useWeb5 must be used within a Web5Provider");
 	}
 	return context;
 };

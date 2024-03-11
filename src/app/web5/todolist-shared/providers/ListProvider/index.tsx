@@ -188,7 +188,7 @@ export const ListProvider = ({ children, protocolDefinition, listId }: any) => {
 export const useList = () => {
 	const context = useContext(TodoContext);
 	if (!context) {
-		throw new Error("useTodoListManager must be used within a Web5Provider");
+		throw new Error("useList must be used within a ListProvider");
 	}
 	return context;
 };

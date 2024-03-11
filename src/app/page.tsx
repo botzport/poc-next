@@ -9,7 +9,7 @@ const ROUTES = ["web5/todolist", "web5/todolist-shared", "web5/identity-agent"];
 
 export default function Page() {
 	return (
-		<BasePage title="Web5 POCs">
+		<BasePage title="Standalone Web5 POC Apps">
 			<VStack
 				divider={<StackDivider borderColor="gray.200" />}
 				spacing={4}
